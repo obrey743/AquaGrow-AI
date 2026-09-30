@@ -130,7 +130,7 @@ scenarios total, matching the dashboard's scenario buttons.
 
 ### `esp32-irrigation-sensor/` - the hardware side (separate project)
 
-Lives as a sibling folder to `smart-irrigation/`, not inside it, because
+Lives as a sibling folder to `AquaGrow-AI/`, not inside it, because
 it's opened in Arduino IDE rather than a code editor. See "Connecting a
 real ESP32" below.
 

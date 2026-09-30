@@ -1,4 +1,4 @@
-// Smart Irrigation Dashboard - frontend logic (Stage 1-6)
+// AquaGrow-AI Dashboard - frontend logic (Stage 1-6)
 //
 // Polls the Flask API every few seconds to keep the dashboard current
 // (sensor cards, gauges, charts, alerts, events), and sends control

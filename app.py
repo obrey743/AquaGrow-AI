@@ -1,5 +1,5 @@
 """
-Smart Irrigation System - Flask Backend (Stage 1-6)
+AquaGrow-AI - Flask Backend (Stage 1-6)
 
 Stage 1: Flask server, SQLite database, basic dashboard.
 Stage 2: background simulator thread generating sensor readings.
@@ -33,7 +33,7 @@ DATABASE = "database.db"
 # How often (seconds) the simulator generates a new reading
 SIMULATOR_INTERVAL_SECONDS = 5
 
-# In-memory simulator state. A school-project-scale Flask app runs as a
+# In-memory simulator state. A small-scale Flask app runs as a
 # single process, so plain module-level variables are enough - no need
 # for a real message queue or task runner.
 current_scenario = "normal"

@@ -1,4 +1,4 @@
-# Running Smart Irrigation on Windows
+# Running AquaGrow-AI on Windows
 
 The project runs the same way on Windows as on Mac/Linux (it's just
 Python + Flask + SQLite), but the exact commands differ a bit. This is
@@ -25,12 +25,12 @@ You should see something like `Python 3.12.4`.
 
 ## 2. Get the project onto your Windows machine
 
-Copy (or `git clone`, if it's in a repo) the `smart-irrigation` folder
+Copy (or `git clone`, if it's in a repo) the `AquaGrow-AI` folder
 onto your Windows computer, then open a terminal (Command Prompt,
 PowerShell, or Windows Terminal) and move into it:
 
 ```powershell
-cd path\to\smart-irrigation
+cd path\to\AquaGrow-AI
 ```
 
 ## 3. Create and activate a virtual environment

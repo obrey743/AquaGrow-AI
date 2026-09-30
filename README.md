@@ -1,4 +1,4 @@
-# Smart Irrigation System (School Project)
+# AquaGrow-AI
 
 An AI-assisted smart irrigation system built with Flask, SQLite, and a plain
 HTML/CSS/JS dashboard. Designed to run fully in software first (simulated
@@ -131,7 +131,7 @@ full visual redesign:
 
 *(On Windows? See [WINDOWS_SETUP.md](WINDOWS_SETUP.md) instead - same steps, Windows-specific commands.)*
 
-1. **Open a terminal in the `smart-irrigation` folder.**
+1. **Open a terminal in the `AquaGrow-AI` folder.**
 
 2. **(Recommended) Create and activate a virtual environment:**
 
@@ -215,7 +215,7 @@ full visual redesign:
 
 ```
 Development/
-├── smart-irrigation/                       (this project - the software side)
+├── AquaGrow-AI/                            (this project - the software side)
 │   ├── app.py                              Flask app: routes, simulator loop, irrigation/leak/AI logic
 │   ├── database.db                         SQLite database (created on first run)
 │   ├── requirements.txt

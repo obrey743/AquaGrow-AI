@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Smart Irrigation Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+    <div class="layout">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand"><span>Smart Irrigation</span></div>
+            <nav class="nav">
+                <a href="#overview">Overview</a>
+                <a href="#charts">Charts</a>
+                <a href="#simulate">Simulator</a>
+                <a href="#control">Irrigation Control</a>
+                <a href="#thresholds">Growth Stages</a>
+                <a href="#events">Events &amp; Alerts</a>
+                <a href="#esp32">ESP32</a>
+            </nav>
+        </aside>
+
+        <!-- Main content -->
+        <main class="content">
+
+            <header class="topbar">
+                <h1 id="overview">Smart Irrigation Dashboard</h1>
+                <div class="topbar-badges">
+                    <span id="data-source-badge" class="badge badge-waiting">Source: --</span>
+                    <span id="connection-status" class="badge badge-waiting">Waiting for data...</span>
+                </div>
+            </header>
+
+            <!-- Summary row: pump control, alerts, growth stage, AI prediction -->
+            <section class="grid-row summary-row">
+                <div class="card power-card">
+                    <p class="card-label">Pump Control</p>
+                    <button id="pump-power-btn" class="power-btn" title="Click to toggle (manual mode only)">
+                        <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <path d="M12 2v10"/>
+                            <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+                        </svg>
+                    </button>
+                    <p class="power-state" id="pump-power-state">OFF</p>
+                    <p class="muted small" id="pump-mode-note">Automatic mode</p>
+                </div>
+
+                <div class="card">
+                    <p class="card-label">Active Alerts</p>
+                    <div class="alert-summary">
+                        <div class="alert-summary-icon" id="alert-summary-icon">&#10003;</div>
+                        <div>
+                            <p class="big-number" id="alert-count">0</p>
+                            <p class="muted small" id="alert-status-text">Status: clear</p>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <p class="card-label">Growth Stage</p>
+                    <p class="big-number" id="growth-stage-display">--</p>
+                    <p class="muted small">Threshold: <span id="moisture-threshold">--</span></p>
+                </div>
+
+                <div class="card">
+                    <p class="card-label">AI Prediction</p>
+                    <p class="value" id="ai-prediction">--</p>
+                    <p class="muted small">Recommendation: <span id="irrigation-recommendation">--</span></p>
+                </div>
+
+            </section>
+
+            <!-- Guidance: what to do next, as opposed to what the sensors read -->
+            <section class="grid-row guidance-row">
+                <!-- Measured from stored sensor history, not the current snapshot (Stage 7) -->
+                <div class="card forecast-card forecast-unknown" id="forecast-card">
+                    <p class="card-label">Moisture Forecast</p>
+                    <p class="forecast-headline" id="forecast-headline">--</p>
+                    <p class="muted small" id="forecast-detail">Collecting readings...</p>
+                </div>
+
+                <!-- Timing check only - there is no nutrient sensor on this system (Stage 8) -->
+                <div class="card fertigation-card fertigation-unknown" id="fertigation-card">
+                    <p class="card-label">Fertigation Window</p>
+                    <p class="forecast-headline" id="fertigation-headline">--</p>
+                    <p class="muted small" id="fertigation-reason">Checking conditions...</p>
+                </div>
+            </section>
+
+            <!-- Gauges + stat cards -->
+            <section class="grid-row">
+                <div class="card gauge-card">
+                    <p class="card-label">Soil Moisture</p>
+                    <div class="gauge-wrap">
+                        <svg viewBox="0 0 200 110" class="gauge-svg">
+                            <path class="gauge-track" d="M20,100 A80,80 0 0 1 180,100" />
+                            <path class="gauge-value" id="gauge-moisture-arc" d="M20,100 A80,80 0 0 1 180,100" />
+                            <g id="gauge-moisture-needle" class="gauge-needle">
+                                <line x1="100" y1="100" x2="100" y2="35" />
+                                <circle cx="100" cy="100" r="6" />
+                            </g>
+                            <text x="14" y="109" class="gauge-tick">0</text>
+                            <text x="94" y="18" class="gauge-tick">50</text>
+                            <text x="168" y="109" class="gauge-tick">100</text>
+                        </svg>
+                    </div>
+                    <p class="gauge-value-label"><span id="soil-moisture">--</span>%</p>
+                </div>
+
+                <div class="card gauge-card">
+                    <p class="card-label">Water Tank Level</p>
+                    <div class="gauge-wrap">
+                        <svg viewBox="0 0 200 110" class="gauge-svg">
+                            <path class="gauge-track" d="M20,100 A80,80 0 0 1 180,100" />
+                            <path class="gauge-value" id="gauge-tank-arc" d="M20,100 A80,80 0 0 1 180,100" />
+                            <g id="gauge-tank-needle" class="gauge-needle">
+                                <line x1="100" y1="100" x2="100" y2="35" />
+                                <circle cx="100" cy="100" r="6" />
+                            </g>
+                            <text x="14" y="109" class="gauge-tick">0</text>
+                            <text x="94" y="18" class="gauge-tick">50</text>
+                            <text x="168" y="109" class="gauge-tick">100</text>
+                        </svg>
+                    </div>
+                    <p class="gauge-value-label"><span id="water-tank-level">--</span>%</p>
+                </div>
+
+                <div class="card stat-stack">
+                    <div class="stat-item">
+                        <p class="card-label">Air Temperature</p>
+                        <p class="value" id="air-temperature">--</p>
+                    </div>
+                    <div class="stat-item">
+                        <p class="card-label">Soil Temperature</p>
+                        <p class="value" id="soil-temperature">--</p>
+                    </div>
+                </div>
+
+                <div class="card stat-stack">
+                    <div class="stat-item">
+                        <p class="card-label">Humidity</p>
+                        <p class="value" id="humidity">--</p>
+                    </div>
+                    <div class="stat-item">
+                        <p class="card-label">Water Flow</p>
+                        <p class="value" id="water-flow">--</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Charts -->
+            <section class="grid-row" id="charts">
+                <div class="card chart-card">
+                    <p class="card-label">Soil Moisture Over Time</p>
+                    <canvas id="moisture-chart"></canvas>
+                </div>
+                <div class="card chart-card">
+                    <p class="card-label">Temperature Over Time</p>
+                    <canvas id="temperature-chart"></canvas>
+                </div>
+                <div class="card chart-card">
+                    <p class="card-label">Water Flow Over Time</p>
+                    <canvas id="flow-chart"></canvas>
+                </div>
+            </section>
+
+            <!-- Simulator controls: no ESP32 needed, pick a scenario to generate -->
+            <section class="panel" id="simulate">
+                <h2>Simulate Sensor Scenario</h2>
+                <div class="scenario-buttons">
+                    <button class="scenario-btn" data-scenario="normal">Normal Soil</button>
+                    <button class="scenario-btn" data-scenario="dry_soil">Dry Soil</button>
+                    <button class="scenario-btn" data-scenario="irrigation">Irrigation</button>
+                    <button class="scenario-btn" data-scenario="low_tank">Low Water Tank</button>
+                    <button class="scenario-btn" data-scenario="leak">Water Leak</button>
+                    <button class="scenario-btn" data-scenario="abnormal_flow">Abnormal Flow</button>
+                </div>
+                <p class="muted">Active scenario: <strong id="active-scenario">normal</strong> &nbsp;|&nbsp; new reading every 5 seconds &nbsp;|&nbsp; only used while Source is "simulator"</p>
+            </section>
+
+            <!-- Irrigation control: growth stage, auto/manual mode -->
+            <section class="panel" id="control">
+                <h2>Irrigation Control</h2>
+                <div class="control-row">
+                    <label for="growth-stage-select">Growth Stage:</label>
+                    <select id="growth-stage-select">
+                        <option value="Seedling">Seedling</option>
+                        <option value="Vegetative">Vegetative</option>
+                        <option value="Flowering">Flowering</option>
+                        <option value="Fruiting">Fruiting</option>
+                    </select>
+                </div>
+                <div class="control-row">
+                    <label class="switch-label">
+                        <input type="checkbox" id="auto-mode-toggle" checked>
+                        Automatic irrigation
+                    </label>
+                </div>
+                <p class="muted small">In manual mode, use the Pump Control button above to turn the pump on/off.</p>
+            </section>
+
+            <!-- Growth stage threshold configuration (read from / written to the database) -->
+            <section class="panel" id="thresholds">
+                <h2>Growth Stage Moisture Thresholds</h2>
+                <table id="growth-stage-table">
+                    <thead>
+                        <tr><th>Stage</th><th>Moisture Threshold (%)</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        <!-- filled in by script.js -->
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Water usage summary -->
+            <section class="panel">
+                <h2>Water Usage</h2>
+                <p><span id="daily-water-usage">0</span> L today &nbsp;|&nbsp; <span id="total-water-usage">0</span> L total</p>
+            </section>
+
+            <!-- Alerts: leak / blockage / low tank detection (Stage 4) -->
+            <section class="panel" id="events">
+                <h2>Faults</h2>
+                <p class="muted small">Something is broken and needs attention.</p>
+                <ul id="faults-list">
+                    <li class="no-alerts">No active faults.</li>
+                </ul>
+
+                <h2>Advisories</h2>
+                <p class="muted small">Nothing is wrong - these are suggestions, usually "hold off watering".</p>
+                <ul id="advisories-list">
+                    <li class="no-alerts">No advisories.</li>
+                </ul>
+
+                <h2>Fertigation Timing</h2>
+                <p id="fertigation-detail" class="muted small">--</p>
+                <ul id="fertigation-reasons"></ul>
+                <p class="muted small" id="fertigation-note"></p>
+            </section>
+
+            <!-- Recent irrigation events, including water used per irrigation (Stage 4) -->
+            <section class="panel">
+                <h2>Recent Irrigation Events</h2>
+                <table id="irrigation-events-table">
+                    <thead>
+                        <tr><th>Time</th><th>Action</th><th>Reason</th><th>Duration</th><th>Water Used</th></tr>
+                    </thead>
+                    <tbody>
+                        <!-- filled in by script.js -->
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- ESP32 integration (Stage 6) -->
+            <section class="panel" id="esp32">
+                <h2>ESP32 Integration</h2>
+                <p>
+                    Current data source: <strong id="esp32-source-label">Simulator</strong>.
+                    Once a real ESP32 starts POSTing to <code>/api/sensor_data</code>, this switches to
+                    "ESP32 (Live)" automatically and the simulator stops inventing readings.
+                </p>
+                <p id="esp32-connection" class="esp32-connection">Checking...</p>
+                <div class="control-row">
+                    <button id="use-esp32-btn" class="control-btn">Use ESP32</button>
+                    <button id="use-simulator-btn" class="control-btn">Switch back to Simulator</button>
+                </div>
+                <p class="muted small">
+                    See <code>../esp32-irrigation-sensor/irrigation_sensor/</code> for the sketch: it reads real
+                    sensors, posts them to <code>/api/sensor_data</code>, then polls
+                    <code>/api/pump_command</code> to drive the pump relay using the same threshold
+                    logic as the simulator.
+                </p>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

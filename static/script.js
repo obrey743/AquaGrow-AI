@@ -47,7 +47,11 @@ async function refreshLatestReading() {
             return;
         }
 
-        if (esp32Offline) {
+        if (data.waiting_for_esp32) {
+            // No values until the board's first post
+            statusBadge.textContent = "Waiting for ESP32...";
+            statusBadge.className = "badge badge-waiting";
+        } else if (esp32Offline) {
             // There is data, but it stopped updating - saying "Live" would be a lie
             statusBadge.textContent = "Stale";
             statusBadge.className = "badge badge-waiting";
@@ -57,8 +61,7 @@ async function refreshLatestReading() {
         }
 
         const r = data.reading;
-        document.getElementById("soil-moisture").textContent = r.soil_moisture;
-        document.getElementById("soil-temperature").textContent = formatValue(r.soil_temperature, "°C");
+        document.getElementById("soil-moisture").textContent = r.soil_moisture ?? "--";
         document.getElementById("air-temperature").textContent = formatValue(r.air_temperature, "°C");
         document.getElementById("humidity").textContent = formatValue(r.humidity, "%");
         const hasTankSensor = r.water_tank_level !== null && r.water_tank_level !== undefined;
@@ -71,7 +74,8 @@ async function refreshLatestReading() {
 
         updateGauge(
             "gauge-moisture-arc", "gauge-moisture-needle",
-            r.soil_moisture, r.soil_moisture < cachedStatus.moisture_threshold
+            r.soil_moisture ?? 0,
+            r.soil_moisture !== null && r.soil_moisture < cachedStatus.moisture_threshold
         );
         // No tank sensor: park the gauge at zero without the warning colour,
         // rather than showing a confident-looking 0% that isn't measured
@@ -347,6 +351,7 @@ async function refreshIrrigationEvents() {
 // Scenario simulator
 // ---------------------------------------------------------------------------
 
+// A sensor with no valid reading (null) shows no value, not a made-up one
 function formatValue(value, unit) {
     if (value === null || value === undefined) return "--";
     return `${value} ${unit}`;
@@ -421,8 +426,12 @@ async function refreshDataSource() {
         let label = "Simulator";
         let healthy = false;
         if (!data.simulator_enabled) {
-            label = esp32 && esp32.offline ? "ESP32 (offline)" : "ESP32 (Live)";
-            healthy = !(esp32 && esp32.offline);
+            if (!(esp32 && esp32.seen)) {
+                label = "ESP32 (waiting)";
+            } else {
+                label = esp32.offline ? "ESP32 (offline)" : "ESP32 (Live)";
+                healthy = !esp32.offline;
+            }
         }
 
         const badge = document.getElementById("data-source-badge");
@@ -486,7 +495,6 @@ const moistureChart = makeLineChart("moisture-chart", [
 ]);
 
 const temperatureChart = makeLineChart("temperature-chart", [
-    { label: "Soil Temp (°C)", data: [], borderColor: "#e8590c", backgroundColor: "#e8590c", tension: 0.3, pointRadius: 2 },
     { label: "Air Temp (°C)", data: [], borderColor: "#f08c00", backgroundColor: "#f08c00", tension: 0.3, pointRadius: 2 },
 ]);
 
@@ -508,8 +516,7 @@ async function refreshCharts() {
         moistureChart.update();
 
         temperatureChart.data.labels = labels;
-        temperatureChart.data.datasets[0].data = rows.map((r) => r.soil_temperature);
-        temperatureChart.data.datasets[1].data = rows.map((r) => r.air_temperature);
+        temperatureChart.data.datasets[0].data = rows.map((r) => r.air_temperature);
         temperatureChart.update();
 
         flowChart.data.labels = labels;

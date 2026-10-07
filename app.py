@@ -14,6 +14,7 @@ Stage 7: read back the stored sensor history to measure how fast the soil is
          moisture will cross the growth stage's threshold.
 """
 
+import math
 import pickle
 import sqlite3
 import threading
@@ -37,7 +38,20 @@ SIMULATOR_INTERVAL_SECONDS = 5
 # single process, so plain module-level variables are enough - no need
 # for a real message queue or task runner.
 current_scenario = "normal"
-current_state = dict(INITIAL_STATE)
+
+# What the dashboard shows before the ESP32 has posted its first reading:
+# no value for any sensor, rather than made-up simulator numbers that look real.
+EMPTY_STATE = {
+    "soil_moisture": None,
+    "soil_temperature": None,
+    "air_temperature": None,
+    "humidity": None,
+    "water_tank_level": None,
+    "water_flow": None,
+    "pump_status": "OFF",
+    "growth_stage": "Vegetative",
+}
+current_state = dict(EMPTY_STATE)
 
 # Irrigation controller state (Stage 3)
 current_growth_stage = "Vegetative"
@@ -92,9 +106,10 @@ FERTIGATION_WET_MARGIN = 15      # % above threshold where nutrients leach past 
 FERTIGATION_IMMINENT_MINUTES = 15  # irrigation due sooner than this would flush a fresh application
 
 # Data source (Stage 6): while True, the background thread generates fake
-# readings. An ESP32 posting to /api/sensor_data switches this off
-# automatically, so simulated and real data never get mixed together.
-simulator_enabled = True
+# readings. Off by default, so the server waits on the real ESP32 and shows
+# no values until its first post - the simulator can still be switched on from
+# the dashboard for demos.
+simulator_enabled = False
 
 # ESP32 liveness (Stage 9). The board pushes to us and never listens, so the
 # only evidence it is alive is how recently it posted. Without this the
@@ -107,11 +122,36 @@ simulator_enabled = True
 ESP32_OFFLINE_SECONDS = SIMULATOR_INTERVAL_SECONDS * 6   # six missed posts
 esp32_last_seen = None       # time.time() of the most recent /api/sensor_data POST
 esp32_address = None         # who sent it, so the dashboard can name the board
+esp32_first_seen = None      # ISO timestamp of the first post this run - charts start here
 
 # What a board must send to /api/sensor_data, and what it may leave out.
-# The optional two need sensors a minimal three-sensor build doesn't have.
-REQUIRED_SENSOR_FIELDS = ["soil_moisture", "air_temperature", "humidity", "water_flow", "pump_status"]
-OPTIONAL_SENSOR_FIELDS = ["soil_temperature", "water_tank_level"]
+# Every measurement is optional: a board sends null (or leaves the field out)
+# for a sensor that isn't fitted or didn't give a trustworthy reading, and the
+# dashboard shows no value for it instead of a made-up number.
+REQUIRED_SENSOR_FIELDS = ["pump_status"]
+OPTIONAL_SENSOR_FIELDS = ["soil_moisture", "air_temperature", "humidity", "water_flow",
+                          "soil_temperature", "water_tank_level"]
+
+# Physically possible range for each measurement. Anything outside it (or NaN)
+# is a wiring/ADC problem, so it is stored as "no reading" rather than shown.
+SENSOR_VALID_RANGES = {
+    "soil_moisture": (0, 100),
+    "humidity": (0, 100),
+    "water_tank_level": (0, 100),
+    "air_temperature": (-20, 60),
+    "soil_temperature": (-20, 60),
+    "water_flow": (0, 60),
+}
+
+# The sensors actually wired to the board. Anything else it posts is a
+# placeholder in the sketch (e.g. a fixed 26.0 C with no temperature sensor),
+# so it is ignored. Add a field here when its sensor is fitted.
+FITTED_SENSORS = ["soil_moisture", "humidity", "air_temperature", "water_tank_level", "water_flow"]
+
+# Auto-mode pump rule for the real ESP32 (the simulator keeps the growth
+# stage thresholds): ON only at 0% soil moisture, OFF again at 30%.
+ESP32_PUMP_ON_AT = 0
+ESP32_PUMP_OFF_AT = 30
 
 # Default moisture thresholds (%) per plant growth stage.
 # These are just starting values - they can be changed later from the
@@ -345,10 +385,13 @@ def detect_faults(state):
     """
     faults = []
 
-    if state["pump_status"] == "OFF" and state["water_flow"] > LEAK_FLOW_THRESHOLD:
+    # No flow meter reading: there is no way to tell a leak or a blockage
+    flow = state["water_flow"]
+
+    if flow is not None and state["pump_status"] == "OFF" and flow > LEAK_FLOW_THRESHOLD:
         faults.append(("leak", f"Possible leak: pump is OFF but water is flowing ({state['water_flow']} L/min)"))
 
-    if state["pump_status"] == "ON" and state["water_flow"] < BLOCKAGE_FLOW_THRESHOLD:
+    if flow is not None and state["pump_status"] == "ON" and flow < BLOCKAGE_FLOW_THRESHOLD:
         faults.append(("blockage", f"Possible blockage or pump problem: pump is ON but flow is only {state['water_flow']} L/min"))
 
     # None means no tank sensor fitted - silence beats a fabricated level
@@ -429,7 +472,7 @@ def predict_irrigation_need(state, growth_stage, previous_watering):
     # probe cannot feed it. Substituting air temperature would quietly
     # change what the model is being asked - retrain it on the features
     # actually available instead (see ml/train_model.py).
-    if state.get("soil_temperature") is None:
+    if any(state.get(f) is None for f in ("soil_moisture", "soil_temperature", "air_temperature", "humidity")):
         return None, None
 
     # Build one row matching the exact columns the model was trained on
@@ -518,6 +561,8 @@ def _moisture_rates(rows, pump_status):
         ).total_seconds()
         if not 0 < seconds <= FORECAST_MAX_GAP_SECONDS:
             continue  # duplicate timestamps, or a gap across a restart
+        if current["soil_moisture"] is None or previous["soil_moisture"] is None:
+            continue  # the soil sensor had no valid reading for one of them
         rates.append((current["soil_moisture"] - previous["soil_moisture"]) / seconds * 60)
 
     return rates
@@ -559,6 +604,8 @@ def estimate_moisture_forecast(threshold):
 
     if not rows:
         return {**unknown, "detail": "No sensor history yet."}
+    if rows[0]["soil_moisture"] is None:
+        return {**unknown, "detail": "No soil moisture reading from the sensor."}
 
     latest = rows[0]
     # Rounded once here: the simulator already rounds, but an ESP32 can post
@@ -701,6 +748,8 @@ def current_watering_progress():
         return None, None
 
     newest, oldest = run[0], run[-1]
+    if newest["soil_moisture"] is None or oldest["soil_moisture"] is None:
+        return None, None
     seconds = (
         datetime.fromisoformat(newest["timestamp"]) - datetime.fromisoformat(oldest["timestamp"])
     ).total_seconds()
@@ -750,6 +799,7 @@ def detect_advisories(state, threshold, forecast):
     if (
         state["water_tank_level"] is not None
         and state["water_tank_level"] <= LOW_TANK_THRESHOLD
+        and state["soil_moisture"] is not None
         and state["soil_moisture"] >= threshold
     ):
         advisories.append((
@@ -803,6 +853,7 @@ def detect_conditions(state, threshold, forecast):
     if (
         seconds is not None
         and seconds >= INEFFECTIVE_MIN_SECONDS
+        and state["water_flow"] is not None
         and state["water_flow"] >= INEFFECTIVE_FLOW_MINIMUM
         and rise < INEFFECTIVE_MOISTURE_RISE
     ):
@@ -853,6 +904,10 @@ def fertigation_window(state, threshold, forecast):
     moisture = state["soil_moisture"]
     target = f"{_trim(threshold)}%"
     reasons = []
+    note = "Timing only - no nutrient sensor fitted, so this says nothing about what the crop actually needs."
+
+    if moisture is None:
+        return {"ok": False, "headline": "--", "reasons": ["no soil moisture reading from the sensor"], "note": note}
 
     if state["pump_status"] == "ON":
         reasons.append("irrigation is running - fertiliser would wash straight past the roots")
@@ -877,8 +932,6 @@ def fertigation_window(state, threshold, forecast):
         due = "under a minute" if minutes_ahead < 1 else f"about {_format_duration(minutes_ahead)}"
         reasons.append(f"irrigation is due in {due} - it would flush a fresh application through")
 
-    note = "Timing only - no nutrient sensor fitted, so this says nothing about what the crop actually needs."
-
     if reasons:
         return {"ok": False, "headline": "Hold off", "reasons": reasons, "note": note}
 
@@ -901,12 +954,27 @@ def compute_commanded_pump():
     # when the board went quiet. Refuse to irrigate on it - the ESP32's own
     # COMMAND_TIMEOUT failsafe would shut the pump off anyway, but only after
     # its own delay, and only if it is still awake enough to notice.
-    if readings_are_stale():
+    if readings_are_stale() or waiting_for_esp32():
         return False
 
+    if not auto_mode:
+        return manual_pump_on
+
+    # No valid moisture reading: never switch the pump on based on a guess
+    if current_state["soil_moisture"] is None:
+        return False
+
+    # Real ESP32 pump: ON only once the soil reads completely dry (0%), and
+    # kept ON until it is back up to ESP32_PUMP_OFF_AT. The gap stops the
+    # relay chattering on and off around a single number.
+    if not simulator_enabled:
+        moisture = current_state["soil_moisture"]
+        if current_state["pump_status"] == "ON":
+            return moisture < ESP32_PUMP_OFF_AT
+        return moisture <= ESP32_PUMP_ON_AT
+
     threshold = get_moisture_threshold(current_growth_stage)
-    should_irrigate = current_state["soil_moisture"] < threshold
-    return should_irrigate if auto_mode else manual_pump_on
+    return current_state["soil_moisture"] < threshold
 
 
 def simulator_loop():
@@ -925,6 +993,11 @@ def simulator_loop():
     previous_pump_status = current_state["pump_status"]
 
     while True:
+        # Nothing real to act on yet, so skip irrigation, alerts and predictions.
+        if waiting_for_esp32():
+            time.sleep(SIMULATOR_INTERVAL_SECONDS)
+            continue
+
         # One bad tick must not kill irrigation, water accounting and alerts
         # for the rest of the run. A crash here used to take the whole thread
         # down silently while the dashboard carried on showing stale values.
@@ -953,7 +1026,7 @@ def simulator_loop():
             # A silent ESP32 leaves current_state frozen, so reusing its last flow
             # reading would bill water forever from a sensor that stopped
             # reporting - 2.6 L/min of phantom usage is 3,744 L a day.
-            if readings_are_stale():
+            if readings_are_stale() or current_state["water_flow"] is None:
                 tick_liters = 0.0
             else:
                 tick_liters = round(current_state["water_flow"] * (SIMULATOR_INTERVAL_SECONDS / 60), 3)
@@ -1033,6 +1106,11 @@ def index():
 @app.route("/api/latest")
 def api_latest():
     """Return the most recent sensor reading (or a 'no data yet' message)."""
+    # Old rows in the database are from an earlier run (often the simulator),
+    # so don't show them as current - show no values until the board reports.
+    if waiting_for_esp32():
+        return jsonify({"has_data": True, "waiting_for_esp32": True, "reading": {**EMPTY_STATE, "timestamp": None}})
+
     db = get_db()
     row = db.execute(
         "SELECT * FROM sensor_readings ORDER BY id DESC LIMIT 1"
@@ -1117,8 +1195,24 @@ def api_status():
     the drying rate across the stored sensor history (Stage 7).
     """
     threshold = get_moisture_threshold(current_growth_stage)
+    if waiting_for_esp32():
+        return jsonify(
+            {
+                "growth_stage": current_growth_stage,
+                "moisture_threshold": threshold,
+                "recommendation": "Waiting for ESP32",
+                "forecast": None,
+                "fertigation": None,
+                "auto_mode": auto_mode,
+                "manual_pump_on": manual_pump_on,
+            }
+        )
+
     forecast = estimate_moisture_forecast(threshold)
-    recommendation = "Irrigate" if current_state["soil_moisture"] < threshold else "OK"
+    if current_state["soil_moisture"] is None:
+        recommendation = "No soil reading"
+    else:
+        recommendation = "Irrigate" if current_state["soil_moisture"] < threshold else "OK"
     return jsonify(
         {
             "growth_stage": current_growth_stage,
@@ -1192,6 +1286,9 @@ def api_ai_prediction():
     if ml_model is None:
         return jsonify({"available": False, "message": "Model not trained yet. Run: python ml/train_model.py"})
 
+    if waiting_for_esp32():
+        return jsonify({"available": False, "message": "Waiting for the first ESP32 reading."})
+
     db = get_db()
 
     # A three-sensor board posts no soil temperature, which the trained
@@ -1218,14 +1315,20 @@ def api_ai_prediction():
 @app.route("/api/history")
 def api_history():
     """Return recent sensor readings, oldest first, for the dashboard charts."""
+    if waiting_for_esp32():
+        return jsonify([])
+
     limit = request.args.get("limit", 30, type=int)
+    # On the ESP32, chart only what the board has sent since it connected -
+    # not simulator rows left in the database from earlier runs
+    since = esp32_first_seen if not simulator_enabled else ""
     db = get_db()
     rows = db.execute(
         """
         SELECT timestamp, soil_moisture, soil_temperature, air_temperature, humidity, water_flow, water_tank_level
-        FROM sensor_readings ORDER BY id DESC LIMIT ?
+        FROM sensor_readings WHERE timestamp >= ? ORDER BY id DESC LIMIT ?
         """,
-        (limit,),
+        (since, limit),
     ).fetchall()
     return jsonify([dict(r) for r in reversed(rows)])
 
@@ -1249,24 +1352,43 @@ def api_sensor_data():
     global current_state, simulator_enabled
 
     data = request.get_json(silent=True) or {}
+    # Raw payload in the server terminal, to tell "the board sent nothing"
+    # apart from "the server rejected it" when a sensor shows no value
+    print(f"ESP32 sent: {request.get_data(as_text=True)}")
     missing = [f for f in REQUIRED_SENSOR_FIELDS if f not in data]
     if missing:
         return jsonify({"error": f"Missing fields: {missing}"}), 400
 
-    global esp32_last_seen, esp32_address
+    global esp32_last_seen, esp32_address, esp32_first_seen
+    if esp32_first_seen is None:
+        esp32_first_seen = datetime.now().isoformat(timespec="seconds")
     simulator_enabled = False  # real data has started arriving - stop inventing readings
     esp32_last_seen = time.time()
     esp32_address = request.remote_addr
 
-    current_state = {field: data[field] for field in REQUIRED_SENSOR_FIELDS}
-    # A board without these sensors posts without them, and everything
-    # downstream treats None as "no sensor" rather than inventing a value
+    current_state = {"pump_status": "ON" if data["pump_status"] == "ON" else "OFF"}
+    # A missing sensor, a null, or an impossible value all become None, and
+    # everything downstream treats None as "no reading" rather than inventing one
     for field in OPTIONAL_SENSOR_FIELDS:
-        current_state[field] = data.get(field)
+        current_state[field] = clean_sensor_value(field, data.get(field))
     current_state["growth_stage"] = current_growth_stage
     save_reading(current_state)
 
     return jsonify({"status": "ok"})
+
+
+def clean_sensor_value(field, value):
+    """A posted measurement as a float, or None if it isn't a believable reading."""
+    if field not in FITTED_SENSORS:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    if not math.isfinite(value):
+        return None
+    low, high = SENSOR_VALID_RANGES[field]
+    if not low <= value <= high:
+        return None
+    return round(float(value), 1)
 
 
 @app.route("/api/pump_command")
@@ -1298,6 +1420,14 @@ def esp32_status():
     }
 
 
+def waiting_for_esp32():
+    """True from startup until the ESP32's first post, while the simulator is off.
+
+    No sensor values are shown in this window instead of showing stale or simulated values.
+    """
+    return (not simulator_enabled) and esp32_last_seen is None
+
+
 def readings_are_stale():
     """True when the newest reading is too old to act on.
 
@@ -1310,11 +1440,15 @@ def readings_are_stale():
 @app.route("/api/data_source", methods=["GET", "POST"])
 def api_data_source():
     """Get or set whether the simulator or a real ESP32 is the active data source."""
-    global simulator_enabled
+    global simulator_enabled, current_state
 
     if request.method == "POST":
         data = request.get_json(silent=True) or {}
+        was_waiting = waiting_for_esp32()
         simulator_enabled = bool(data.get("simulator_enabled", simulator_enabled))
+        # The simulator can't start from empty readings - give it its usual starting point
+        if was_waiting and simulator_enabled:
+            current_state = dict(INITIAL_STATE)
 
     return jsonify(
         {

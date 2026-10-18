@@ -221,7 +221,8 @@ Development/
 │   ├── requirements.txt
 │   ├── templates/index.html                Dashboard page
 │   ├── static/style.css                    Dashboard styling
-│   ├── static/script.js                    Dashboard frontend logic (polling, gauges, charts, controls)
+│   ├── static/script.js                    Dashboard entry point (polling, routing, mounting components)
+│   ├── static/js/                          Dashboard modules: api, model, components, charts
 │   ├── ml/train_model.py                   Generates training data, trains + saves the model
 │   ├── ml/model.pkl                        Trained model (created by train_model.py)
 │   ├── simulator/sensor_simulator.py       Simulated sensor reading generator

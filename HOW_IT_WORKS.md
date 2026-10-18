@@ -86,36 +86,68 @@ You can open it directly to poke around: `sqlite3 database.db` then
 
 ### `templates/index.html` - the dashboard page structure
 
-One page, sectioned with a sidebar for navigation (anchor links, no page
-reloads): summary cards (pump control, alerts, growth stage, AI
-prediction), gauges (soil moisture, tank level), sensor stat cards,
-charts, the scenario simulator, irrigation control, growth-stage
-thresholds, water usage, alerts/events, and the ESP32 panel. All the
-actual numbers are placeholders (`--`) filled in by JavaScript after the
-page loads - the HTML itself has no live data in it.
+The app shell: a sidebar grouped into Main / Irrigation / Crop / System,
+a top bar (page title, ESP32 connection indicator, notifications), and
+one `<section class="view">` per page - Overview, Farm Monitor,
+Analytics, AI Insights, Irrigation Control, Water Tank, Irrigation
+Zones, Growth Stages, Crop Health, Sensor Data, Simulator, ESP32,
+Events & Alerts and Settings. Pages switch by URL hash (`#/irrigation`)
+with no reload, and the old anchors (`#control`, `#simulate`...) still
+land on the right page.
+
+Each page is mostly placeholders like `<div data-component="metric"
+data-metric="humidity">` - the HTML says *where* a component goes and
+JavaScript builds it. The HTML itself holds no live data.
 
 ### `static/style.css` - all the visual styling
 
-The dark sidebar, card layout, the hand-built SVG gauge look (a
-semicircle arc + rotating needle, no charting library needed for those),
-button/table styling, and small-screen responsiveness.
+Laid out like an engineering monitoring console rather than a web
+dashboard: one neutral canvas with no boxes or decorative borders.
+Hierarchy comes from type size and spacing; hairline dividers appear only
+between list/table rows and between major page rows. Typeface is Outfit.
+The palette comes from the field - forest-green sidebar, warm sage-grey
+canvas, sand soil, muted water blue - and colour always means something:
+green healthy/optimal, amber waiting/warning, red critical, blue
+water/information. Each measurement keeps one colour in every chart
+(`--m-<metric>` tokens in the stylesheet). Design tokens at the top, then
+the shell, status indicators, and one block per component. Responsive down to
+phone width: the sidebar becomes a slide-out drawer under 1024px and the
+grids collapse to one column. Animations respect
+`prefers-reduced-motion`.
 
-### `static/script.js` - the dashboard's brain
+### `static/script.js` + `static/js/` - the dashboard's brain
 
-Polls the API every 5 seconds and updates the page:
+- **`script.js`** - entry point. Polls every endpoint every 5 seconds
+  (`/api/latest`, `/api/status`, `/api/data_source`,
+  `/api/growth_stages`, `/api/water_usage`, `/api/alerts`,
+  `/api/irrigation_events`, `/api/ai_prediction`, `/api/scenario`),
+  mounts the components, and handles routing, the mobile menu and the
+  notifications popover.
+- **`js/api.js`** - every control the dashboard sends back (`POST`s to
+  growth stage, thresholds, auto mode, pump, scenario, data source).
+  Same endpoints and payloads as before the redesign.
+- **`js/model.js`** - turns the raw responses into what every card
+  shows: moisture status against the stage's optimal range (threshold
+  to threshold +15%, the backend's saturation margin), the connection
+  state (Connected / Offline / Waiting / Simulation), the AI summary,
+  the next irrigation time (from the backend's measured forecast), and
+  the alert list. A missing reading stays missing - nothing is invented.
+- **`js/components.js`** - the reusable components (process schematic,
+  metric tile, soil moisture, AI advisory, irrigation control, water
+  tank, alarms, growth lifecycle...). The Overview's process schematic
+  draws tank -> pump -> flow meter -> field with live values. Pipes stay
+  neutral grey and animate only while water is actually flowing; faults
+  ("pump on, no flow", "flow with pump off" - the backend's 0.3 L/min
+  leak/blockage limit) show as status on the flow meter. Each builds its DOM once and updates in place,
+  so one component can appear on several pages.
+- **`js/charts.js`** - the Environmental Overview chart (Chart.js) with
+  metric tabs and 6H/24H/7D/30D ranges. `/api/history` only takes a row
+  limit, so it fetches enough rows once, then only the newest each poll,
+  and averages long ranges down. Gaps in the data stay gaps.
 
-- `refreshLatestReading()` - sensor cards + gauges.
-- `refreshStatus()` - growth stage, threshold, recommendation, pump
-  mode.
-- `refreshGrowthStages()`, `refreshWaterUsage()`, `refreshAlerts()`,
-  `refreshIrrigationEvents()`, `refreshAIPrediction()`,
-  `refreshDataSource()` - one per dashboard panel.
-- `refreshCharts()` - fetches recent history and redraws the three
-  Chart.js line charts.
-- A handful of click/change handlers that `POST` control changes back
-  to the server (scenario buttons, growth-stage dropdown, auto/manual
-  toggle, the pump power button, threshold "Save" buttons, "Switch back
-  to Simulator").
+Two settings live only in the browser (Settings page): the tank's
+capacity in litres (to turn tank % into an estimate) and the default
+chart range.
 
 ### `simulator/sensor_simulator.py` - fake sensor data generator
 

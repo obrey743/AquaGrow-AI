@@ -1,640 +1,3233 @@
-/* AquaGrow-AI Dashboard - styling */
+/* AquaGrow-AI Dashboard - styling
+ *
+ * An engineering monitoring console on a clean canvas. Hierarchy comes from
+ * position, type size and whitespace - not boxes. There are no decorative
+ * borders: hairline dividers appear only between rows of lists/tables and
+ * between major page rows. The palette comes from the field - forest and
+ * sage greens, sand, soil brown, muted water blue - and colour always
+ * carries meaning: green = healthy/optimal, amber = waiting/warning,
+ * red = critical, muted blue = water/information.
+ */
+
+/* ================================================================== */
+/* Tokens                                                              */
+/* ================================================================== */
 
 :root {
-    --bg: #f4f6f9;
-    --sidebar-bg: #0b2447;
-    --sidebar-text: #cbd5e1;
-    --sidebar-active: #ffffff;
-    --card-bg: #ffffff;
-    --text: #1f2933;
-    --muted: #6b7280;
-    --primary: #2f6fed;
-    --primary-light: #e8f0fe;
-    --success: #2f9e44;
-    --success-light: #d3f9d8;
-    --border: #e5e7eb;
-    --warning: #f08c00;
-    --warning-light: #fff9db;
-    --danger: #e03131;
-    --danger-light: #fff5f5;
+    --font: "Outfit", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+    /* Sidebar: deep forest / charcoal green */
+    --nav-bg: #1e2b22;
+    --nav-text: #a7b5a9;
+    --nav-text-strong: #eef2ea;
+    --nav-muted: #6b7d6f;
+    --nav-active: rgba(150, 184, 140, 0.15);
+
+    /* Canvas: warm sage-tinted neutrals */
+    --bg: #f1f1ea;
+    --surface: #f8f8f3;        /* slightly lighter areas: process panel, overlays */
+    --surface-2: #e9eae1;
+    --surface-3: #e1e3d8;
+    --rule: #dcdfd2;           /* the only divider colour */
+    --border-strong: #c3c8b8;  /* form controls and illustrations only */
+
+    /* Text: green-charcoal */
+    --text: #1f2a22;
+    --text-2: #4c584e;
+    --text-3: #7a857b;
+
+    /* Agricultural palette */
+    --forest: #2f5d3a;
+    --forest-hover: #264c30;
+    --olive: #5b6b3a;
+    --sage: #8fa889;
+    --sage-light: #c4d4bd;
+    --sand: #e6dcc6;
+    --soil: #8a6a4a;
+    --primary: var(--forest);
+    --primary-hover: var(--forest-hover);
+
+    /* State */
+    --good: #3b7a49;
+    --good-soft: #e3eddf;
+    --warning: #b7791f;
+    --warning-soft: #f6ecd8;
+    --critical: #b23a2e;
+    --critical-soft: #f5e3df;
+    --info: #4f7ea0;           /* muted water blue: water + information */
+    --info-soft: #e3ebef;
+    --muted: #9aa293;
+    --muted-soft: #e9eae1;
+
+    /* Water */
+    --water: #8fb0c8;
+    --water-line: #5f8fae;
+
+    /* One colour per measurement, used by every chart and sparkline */
+    --m-soil_moisture: #3b7a49;
+    --m-air_temperature: #b5793f;
+    --m-humidity: #7189a0;
+    --m-water_flow: #4f7ea0;
+    --m-water_tank_level: #5f8fae;
+    --m-soil_temperature: #8a6a4a;
+
+    --chart-line: #3b7a49;
+    --chart-ref: #8b917f;
+    --chart-band: rgba(59, 122, 73, 0.15);
+    --chart-grid: #e3e5da;
+
+    --radius-sm: 4px;
+    --shadow-pop: 0 10px 30px rgba(30, 43, 34, 0.16), 0 1px 3px rgba(30, 43, 34, 0.08);
+    --sidebar-w: 228px;
 }
 
-* {
+/* ================================================================== */
+/* Base                                                                */
+/* ================================================================== */
+
+*,
+*::before,
+*::after {
     box-sizing: border-box;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
 }
 
 body {
     margin: 0;
-    font-family: "Segoe UI", Arial, sans-serif;
+    font-family: var(--font);
+    font-size: 14.5px;
+    line-height: 1.45;
+    color: var(--text);
     background: var(--bg);
-    color: var(--text);
+    -webkit-font-smoothing: antialiased;
 }
 
-.layout {
-    display: flex;
-    min-height: 100vh;
+h1, h2, h3, h4, p, dl, dd {
+    margin: 0;
 }
 
-/* ---------------------------------------------------------------- */
-/* Sidebar                                                            */
-/* ---------------------------------------------------------------- */
-
-.sidebar {
-    width: 220px;
-    flex-shrink: 0;
-    background: var(--sidebar-bg);
-    color: var(--sidebar-text);
-    padding: 20px 16px;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    overflow-y: auto;
-}
-
-.brand {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: white;
-    margin-bottom: 24px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.nav {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.nav a {
-    color: var(--sidebar-text);
+a {
+    color: inherit;
     text-decoration: none;
-    padding: 10px 12px;
-    border-radius: 8px;
-    font-size: 0.9rem;
 }
 
-.nav a:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: white;
+button,
+input,
+select {
+    font: inherit;
+    color: inherit;
 }
 
-/* ---------------------------------------------------------------- */
-/* Main content                                                       */
-/* ---------------------------------------------------------------- */
-
-.content {
-    flex: 1;
-    padding: 24px 28px 60px;
-    max-width: 1400px;
-}
-
-.topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.topbar h1 {
-    margin: 0;
-    font-size: 1.4rem;
-}
-
-.topbar-badges {
-    display: flex;
-    gap: 8px;
-}
-
-.badge {
-    padding: 6px 12px;
-    border-radius: 999px;
-    font-size: 0.8rem;
-    font-weight: 600;
-}
-
-.badge-waiting {
-    background: #e5e7eb;
-    color: var(--muted);
-}
-
-.badge-ok {
-    background: var(--success-light);
-    color: var(--success);
-}
-
-/* ---------------------------------------------------------------- */
-/* Card grid                                                          */
-/* ---------------------------------------------------------------- */
-
-.grid-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 16px;
-    margin-bottom: 20px;
-}
-
-/* The two guidance cards share a row of their own, evenly split */
-.guidance-row {
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-}
-
-.card {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 18px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.card-label {
-    margin: 0 0 8px 0;
-    font-size: 0.8rem;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    text-align: center;
-}
-
-.value {
-    margin: 0;
-    font-size: 1.6rem;
-    font-weight: 700;
-    color: var(--text);
-}
-
-.big-number {
-    margin: 0;
-    font-size: 2rem;
-    font-weight: 700;
-    line-height: 1;
-}
-
-/* ---------------------------------------------------------------- */
-/* Pump power button                                                  */
-/* ---------------------------------------------------------------- */
-
-.power-card {
-    text-align: center;
-}
-
-.power-btn {
-    width: 84px;
-    height: 84px;
-    border-radius: 50%;
-    border: 3px solid var(--border);
-    background: #f8f9fa;
-    color: var(--muted);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+button {
     cursor: pointer;
-    margin: 6px auto;
-    transition: all 0.2s ease;
 }
 
-.power-btn.on {
-    border-color: var(--success);
-    color: var(--success);
-    background: var(--success-light);
-    box-shadow: 0 0 0 5px rgba(47, 158, 68, 0.15);
-}
-
-.power-btn:disabled {
+button:disabled {
     cursor: not-allowed;
-    opacity: 0.85;
-}
-
-.power-state {
-    text-align: center;
-    font-weight: 700;
-    font-size: 1.1rem;
-    margin: 4px 0 0;
-    letter-spacing: 0.05em;
-}
-
-/* ---------------------------------------------------------------- */
-/* Active alerts summary card                                         */
-/* ---------------------------------------------------------------- */
-
-.alert-summary {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-}
-
-.alert-summary-icon {
-    width: 46px;
-    height: 46px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.3rem;
-    flex-shrink: 0;
-    background: var(--success-light);
-    color: var(--success);
-}
-
-.alert-summary-icon.active {
-    background: var(--danger-light);
-    color: var(--danger);
-}
-
-/* ---------------------------------------------------------------- */
-/* Gauges                                                              */
-/* ---------------------------------------------------------------- */
-
-.gauge-card {
-    text-align: center;
-}
-
-.gauge-wrap {
-    display: flex;
-    justify-content: center;
-}
-
-.gauge-svg {
-    width: 100%;
-    max-width: 220px;
-}
-
-.gauge-track {
-    fill: none;
-    stroke: #e5e7eb;
-    stroke-width: 14;
-    stroke-linecap: round;
-}
-
-.gauge-value {
-    fill: none;
-    stroke: var(--primary);
-    stroke-width: 14;
-    stroke-linecap: round;
-    stroke-dasharray: 251.33;
-    stroke-dashoffset: 251.33;
-    transition: stroke-dashoffset 0.6s ease, stroke 0.3s ease;
-}
-
-.gauge-value.warn {
-    stroke: var(--danger);
-}
-
-.gauge-needle {
-    transform-origin: 100px 100px;
-    transition: transform 0.6s ease;
-}
-
-.gauge-needle line {
-    stroke: #1f2933;
-    stroke-width: 3;
-    stroke-linecap: round;
-}
-
-.gauge-needle circle {
-    fill: #1f2933;
-}
-
-.gauge-tick {
-    font-size: 10px;
-    fill: var(--muted);
-}
-
-.gauge-value-label {
-    text-align: center;
-    font-size: 1.7rem;
-    font-weight: 700;
-    margin: -6px 0 0;
-}
-
-/* ---------------------------------------------------------------- */
-/* Stat stack cards (small paired numbers)                            */
-/* ---------------------------------------------------------------- */
-
-.stat-stack {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    justify-content: center;
-}
-
-.stat-item {
-    text-align: center;
-}
-
-/* ---------------------------------------------------------------- */
-/* Charts                                                              */
-/* ---------------------------------------------------------------- */
-
-.chart-card canvas {
-    width: 100% !important;
-    height: 220px !important;
-}
-
-/* ---------------------------------------------------------------- */
-/* Panels (existing sections restyled)                                 */
-/* ---------------------------------------------------------------- */
-
-.panel {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 18px 22px;
-    margin-bottom: 20px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.panel h2 {
-    margin-top: 0;
-    font-size: 1.05rem;
-}
-
-/* The events panel stacks three sub-sections, so give each room to breathe */
-#events h2 ~ h2 {
-    margin-top: 24px;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    overflow-x: auto;
-    display: block;
-}
-
-table thead, table tbody {
-    display: table;
-    width: 100%;
-    table-layout: fixed;
-}
-
-th, td {
-    text-align: left;
-    padding: 8px 6px;
-    border-bottom: 1px solid var(--border);
-    font-size: 0.9rem;
-}
-
-.muted {
-    color: var(--muted);
-}
-
-.small {
-    font-size: 0.85rem;
 }
 
 code {
-    background: #f1f3f5;
-    padding: 1px 6px;
-    border-radius: 4px;
-    font-size: 0.85em;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-2);
+    background: var(--surface-2);
+    border-radius: 3px;
+    padding: 1px 5px;
 }
 
-#faults-list, #advisories-list {
-    list-style: none;
-    margin: 0 0 4px 0;
-    padding: 0;
+:focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 2px;
 }
 
-#faults-list li, #advisories-list li {
-    padding: 8px 10px;
-    border-radius: 6px;
-    margin-bottom: 6px;
-    font-size: 0.9rem;
+[hidden] {
+    display: none !important;
 }
 
-.no-alerts {
-    color: var(--muted);
+.icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
-.alert-leak, .alert-blockage, .alert-ineffective-irrigation, .alert-esp32-offline {
-    background: var(--danger-light);
-    color: var(--danger);
+.muted { color: var(--text-2); }
+.fine { font-size: 12px; color: var(--text-3); }
+.center { text-align: center; }
+.right { text-align: right; }
+.nowrap { white-space: nowrap; }
+
+:is(span, strong, p, small).tone-good { color: var(--good); }
+:is(span, strong, p, small).tone-warning { color: var(--warning); }
+:is(span, strong, p, small).tone-critical { color: var(--critical); }
+:is(span, strong, p, small).tone-info { color: var(--info); }
+:is(span, strong, p, small).tone-muted { color: var(--text-3); }
+
+.num,
+.big-stat,
+.tab-value,
+.kv dd,
+.table td,
+.readout strong,
+.node-text strong {
+    font-variant-numeric: tabular-nums;
 }
 
-.alert-low-tank {
-    background: var(--warning-light);
-    color: var(--warning);
+/* ------------------------------------------------- Status indicators */
+
+/* Indicator lamp - the parent's tone sets its colour */
+.led {
+    --tone: var(--muted);
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--tone);
+    flex-shrink: 0;
 }
 
-/* ---------------------------------------------------------------- */
-/* Scenario / control buttons                                         */
-/* ---------------------------------------------------------------- */
+.tone-good .led, .led.led-on { --tone: var(--good); }
+.tone-warning .led { --tone: var(--warning); }
+.tone-critical .led { --tone: var(--critical); }
+.tone-info .led { --tone: var(--info); }
+.led.led-off { --tone: #c9ced3; }
 
-.scenario-buttons {
+.led-lg {
+    width: 12px;
+    height: 12px;
+}
+
+.blink .led,
+.led.blink {
+    animation: blink 1.4s steps(2, jump-none) infinite;
+}
+
+/* State word with a dot: ● RUNNING */
+.status-tag {
+    --tone: var(--text-3);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--tone) !important;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.status-tag::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.status-tag.tone-good, .tone-good > .status-tag { --tone: var(--good); }
+.status-tag.tone-warning, .tone-warning > .status-tag { --tone: var(--warning); }
+.status-tag.tone-critical, .tone-critical > .status-tag { --tone: var(--critical); }
+.status-tag.tone-info, .tone-info > .status-tag { --tone: var(--info); }
+
+/* Inline status next to a reading: ● Optimal */
+.pill {
+    --tone: var(--text-3);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--tone);
+    white-space: nowrap;
+    line-height: 1.4;
+}
+
+.pill .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.pill-good { --tone: var(--good); }
+.pill-warning { --tone: var(--warning); }
+.pill-critical { --tone: var(--critical); }
+.pill-info { --tone: var(--info); }
+.pill-muted { --tone: var(--text-3); }
+.pill-muted .dot { background: var(--muted); }
+
+.pill-sm {
+    margin-left: 10px;
+    font-size: 11.5px;
+}
+
+/* ================================================================== */
+/* App shell                                                           */
+/* ================================================================== */
+
+.app {
+    min-height: 100vh;
+}
+
+.sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: var(--sidebar-w);
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 10px;
+    flex-direction: column;
+    background: var(--nav-bg);
+    color: var(--nav-text);
+    z-index: 40;
+    transition: transform 0.2s ease;
 }
 
-.scenario-btn, .control-btn {
-    padding: 8px 14px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: #f8f9fa;
-    color: var(--text);
-    font-size: 0.9rem;
-    cursor: pointer;
-}
-
-.scenario-btn:hover, .control-btn:hover {
-    background: #eef1f5;
-}
-
-.scenario-btn.active {
-    background: var(--primary);
-    border-color: var(--primary);
-    color: white;
-}
-
-.control-row {
+.brand {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 12px;
+    height: 60px;
+    padding: 0 20px;
 }
 
-.control-row:last-child {
-    margin-bottom: 0;
+.brand-mark {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    background: #4f7f56;
+    color: #eef2ea;
 }
 
-.control-row select {
-    padding: 6px 10px;
-    border: 1px solid var(--border);
+.brand-mark .icon {
+    width: 14px;
+    height: 14px;
+}
+
+.brand-text {
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.brand-text span {
+    color: var(--sage);
+    font-weight: 400;
+}
+
+.nav {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    padding: 0 12px 12px;
+    scrollbar-width: thin;
+    scrollbar-color: #33453a transparent;
+}
+
+.nav-section {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--nav-muted);
+    padding: 18px 8px 6px;
+}
+
+.nav-section:first-child {
+    padding-top: 6px;
+}
+
+.nav a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 32px;
+    padding: 0 8px;
+    border-radius: var(--radius-sm);
+    font-size: 13.5px;
+    color: var(--nav-text);
+}
+
+.nav a .icon {
+    width: 15px;
+    height: 15px;
+    opacity: 0.85;
+}
+
+.nav a:hover {
+    color: var(--nav-text-strong);
+}
+
+.nav a[aria-current="page"] {
+    background: var(--nav-active);
+    color: var(--nav-text-strong);
+}
+
+.nav a[aria-current="page"] .icon {
+    color: var(--sage-light);
+    opacity: 1;
+}
+
+.nav-pill,
+.nav-count {
+    margin-left: auto;
+    font-size: 11.5px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.nav-pill {
+    color: #a8c3d6;
+    font-weight: 500;
+}
+
+.nav-count {
+    color: #e2b25c;
+}
+
+.nav-count.is-critical {
+    color: #e99282;
+}
+
+.sidebar-foot {
+    padding: 14px 20px 18px;
+}
+
+.scrim {
+    position: fixed;
+    inset: 0;
+    background: rgba(22, 27, 34, 0.4);
+    z-index: 35;
+}
+
+.main {
+    margin-left: var(--sidebar-w);
+    min-width: 0;
+}
+
+/* ------------------------------------------------------------ Topbar */
+
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 60px;
+    padding: 0 40px;
+    background: var(--bg);
+    box-shadow: 0 1px 0 var(--rule);
+}
+
+.icon-btn.menu-btn {
+    display: none;
+}
+
+.topbar-title {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.crumb {
+    order: 2;
+    font-size: 12.5px;
+    color: var(--text-3);
+}
+
+.crumb-brand,
+.crumb-sep {
+    display: none;
+}
+
+#page-title {
+    font-size: 17px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.icon-btn {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-2);
+}
+
+.icon-btn:hover {
+    background: var(--surface-2);
+    color: var(--text);
+}
+
+.notif {
+    position: relative;
+}
+
+.notif-dot {
+    position: absolute;
+    top: 5px;
+    right: 6px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+}
+
+.notif-dot.is-warning { background: var(--warning); }
+.notif-dot.is-critical { background: var(--critical); }
+
+.popover {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    width: min(380px, calc(100vw - 24px));
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 14px 16px;
+    background: var(--surface);
     border-radius: 6px;
-    font-size: 0.9rem;
+    box-shadow: var(--shadow-pop);
+    z-index: 50;
 }
 
-.switch-label {
+.popover-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.popover-title {
+    font-weight: 600;
+    font-size: 13.5px;
+}
+
+.link-sm {
+    font-size: 12.5px;
+    color: var(--forest);
+    white-space: nowrap;
+    text-decoration: underline;
+    text-decoration-color: var(--sage-light);
+    text-underline-offset: 3px;
+}
+
+.link-sm:hover {
+    color: var(--text);
+    text-decoration-color: currentColor;
+}
+
+.profile {
     display: flex;
     align-items: center;
     gap: 8px;
-    cursor: pointer;
 }
 
-.switch-label input {
-    width: 18px;
-    height: 18px;
+.avatar {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--surface-3);
+    color: var(--text-2);
 }
 
-.threshold-input {
-    width: 70px;
-    padding: 4px 6px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
+.avatar .icon {
+    width: 14px;
+    height: 14px;
 }
 
-.save-threshold-btn {
-    padding: 4px 10px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: #f8f9fa;
-    cursor: pointer;
-    font-size: 0.85rem;
+.profile-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
 }
 
-.save-threshold-btn:hover {
-    background: #eef1f5;
+.profile-text strong {
+    font-size: 12.5px;
+    font-weight: 500;
 }
 
-/* ---------------------------------------------------------------- */
-/* Moisture forecast card (Stage 7)                                   */
-/* ---------------------------------------------------------------- */
-
-.forecast-headline {
-    margin: 0 0 4px 0;
-    font-size: 1.5rem;
-    font-weight: 700;
-    line-height: 1.15;
+.profile-text small {
+    font-size: 11.5px;
+    color: var(--text-3);
 }
 
-/* Colour by state: how urgent is it, and which way is moisture moving */
-.forecast-drying {
-    background: var(--warning-light);
+/* ------------------------------------------- Connection indicator */
+
+.conn {
+    display: flex;
+    gap: 9px;
 }
 
-.forecast-drying .forecast-headline {
-    color: var(--warning);
+.conn-state {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
 }
 
-.forecast-dry-now {
-    background: var(--danger-light);
+.conn.tone-good .conn-state { color: var(--good); }
+.conn.tone-warning .conn-state { color: var(--warning); }
+.conn.tone-critical .conn-state { color: var(--critical); }
+.conn.tone-info .conn-state { color: var(--info); }
+.conn.tone-muted .conn-state { color: var(--text-2); }
+
+.conn-device {
+    margin-left: 7px;
+    font-size: 12.5px;
+    color: var(--text-2);
 }
 
-.forecast-dry-now .forecast-headline {
-    color: var(--danger);
+.conn-header {
+    align-items: center;
 }
 
-.forecast-filling {
-    background: var(--primary-light);
+.conn-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
 }
 
-.forecast-filling .forecast-headline {
-    color: var(--primary);
+.conn-text small {
+    font-size: 11.5px;
+    color: var(--text-3);
+    white-space: nowrap;
 }
 
-.forecast-satisfied,
-.forecast-steady {
-    background: var(--success-light);
+.conn-card {
+    flex-direction: column;
+    gap: 2px;
 }
 
-.forecast-satisfied .forecast-headline,
-.forecast-steady .forecast-headline {
-    color: var(--success);
+.conn-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.forecast-unknown .forecast-headline {
-    color: var(--muted);
+.conn-card.tone-good .conn-state { color: #9fcf9a; }
+.conn-card.tone-warning .conn-state { color: #e2b25c; }
+.conn-card.tone-critical .conn-state { color: #e99282; }
+.conn-card.tone-info .conn-state { color: #a8c3d6; }
+.conn-card.tone-muted .conn-state { color: var(--nav-text-strong); }
+
+.conn-card .conn-device {
+    margin-left: 0;
+    color: var(--nav-text);
 }
 
-/* ---------------------------------------------------------------- */
-/* Fertigation window + advisories (Stage 8)                          */
-/* ---------------------------------------------------------------- */
-
-.fertigation-ok {
-    background: var(--success-light);
+.conn-card small {
+    font-size: 11.5px;
+    padding-left: 16px;
 }
 
-.fertigation-ok .forecast-headline {
-    color: var(--success);
+.conn-card .conn-where {
+    color: var(--nav-muted);
 }
 
-.fertigation-hold {
-    background: var(--warning-light);
+/* ------------------------------------------------------- Simulation */
+
+.sim-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 8px 40px;
+    background: var(--info-soft);
+    color: #48667c;
+    font-size: 13px;
 }
 
-.fertigation-hold .forecast-headline {
-    color: var(--warning);
+.sim-banner strong {
+    font-weight: 600;
+    color: #33536a;
 }
 
-.fertigation-unknown .forecast-headline {
-    color: var(--muted);
+.sim-banner a {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: #33536a;
 }
 
-#fertigation-reasons {
-    margin: 8px 0;
-    padding-left: 18px;
-    font-size: 0.9rem;
+.sim-banner a .icon {
+    width: 13px;
+    height: 13px;
 }
 
-#fertigation-reasons li {
-    margin-bottom: 4px;
+.sim-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--info);
+    flex-shrink: 0;
 }
 
-#fertigation-note {
-    font-style: italic;
+/* ================================================================== */
+/* Page layout: rows of sections on one canvas                         */
+/* ================================================================== */
+
+.content {
+    max-width: 1560px;
+    margin: 0 auto;
+    padding: 32px 40px 64px;
 }
 
-/* An advisory is guidance, not a fault - it must not read like a burst pipe */
-.alert-advisory {
-    background: var(--primary-light);
-    color: var(--primary);
+/* Major rows are separated by space and a single hairline. Hidden rows
+   (an empty waiting panel) take no part in the gap. */
+.view {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
 }
 
-/* ---------------------------------------------------------------- */
-/* ESP32 connection status (Stage 9)                                  */
-/* ---------------------------------------------------------------- */
-
-.esp32-connection {
-    margin: 12px 0;
-    padding: 10px 12px;
-    border-radius: 6px;
-    background: #f1f3f5;
-    color: var(--muted);
-    font-size: 0.9rem;
+.view > * + * {
+    padding-top: 32px;
+    box-shadow: 0 -1px 0 var(--rule);
 }
 
-.esp32-connection.offline {
-    background: var(--danger-light);
-    color: var(--danger);
+/* Components with nothing to show take no space */
+.view > [data-component]:empty {
+    display: none;
+}
+
+.view-enter {
+    animation: fade-in 0.12s ease;
+}
+
+.grid {
+    display: grid;
+    gap: 40px 56px;
+    min-width: 0;
+}
+
+.grid > * {
+    min-width: 0;
+}
+
+.grid-hero { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+.grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.grid > [data-component] > section,
+.grid > [data-component] > form {
+    height: 100%;
+}
+
+[data-component="ai-detail"],
+[data-component="esp32"],
+[data-component="crop-health"],
+[data-component="simulator"],
+[data-component="zones"] {
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+}
+
+[data-component="zones"] {
+    gap: 12px;
+}
+
+.page-intro {
+    margin-bottom: -8px;
+}
+
+.page-intro h2 {
+    font-size: 15px;
     font-weight: 600;
 }
 
-.control-btn:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
+.page-intro p {
+    color: var(--text-3);
+    font-size: 13px;
 }
 
-/* ---------------------------------------------------------------- */
-/* Small screens                                                      */
-/* ---------------------------------------------------------------- */
+/* ================================================================== */
+/* Sections                                                            */
+/* ================================================================== */
 
-@media (max-width: 800px) {
-    .layout {
-        flex-direction: column;
+/* A section is just content on the page - no box */
+.card {
+    min-width: 0;
+}
+
+.card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 22px;
+    margin-bottom: 16px;
+}
+
+/* The one small uppercase label each section gets */
+.section-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-2);
+}
+
+.eyebrow {
+    font-size: 12.5px;
+    color: var(--text-3);
+}
+
+.card-note {
+    font-size: 12.5px;
+    color: var(--text-3);
+    margin: -6px 0 14px;
+    max-width: 760px;
+}
+
+.card > .card-note:last-child {
+    margin: 14px 0 0;
+}
+
+.big-stat {
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.big-stat .unit {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-3);
+    margin-left: 3px;
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+/* Small secondary labels are sentence case, not uppercase */
+.ai-stats small,
+.readout small,
+.irr-status small,
+.pump-cmd small,
+.stage-facts small,
+.usage-grid small,
+.zone-stat small,
+.chart-foot small,
+.statusbar-meta dt,
+.process-env dt,
+.kv dt {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-3);
+}
+
+/* --------------------------------------------------------- Buttons */
+
+.btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.btn .icon {
+    width: 14px;
+    height: 14px;
+}
+
+.btn:disabled {
+    opacity: 0.4;
+}
+
+.btn-primary {
+    background: var(--forest);
+    color: #f4f6ef;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--forest-hover);
+}
+
+.btn-secondary {
+    background: transparent;
+    border-color: var(--border-strong);
+    color: var(--text);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: var(--surface-2);
+}
+
+.btn-ghost {
+    background: transparent;
+    color: var(--text-2);
+    padding: 0 4px;
+}
+
+.btn-ghost:hover:not(:disabled) {
+    color: var(--text);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.btn-danger {
+    background: var(--critical);
+    color: #fff;
+}
+
+.btn-sm {
+    height: 28px;
+    padding: 0 10px;
+    font-size: 12.5px;
+}
+
+.btn.is-busy {
+    color: transparent !important;
+    pointer-events: none;
+}
+
+.btn.is-busy::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--border-strong);
+    border-top-color: var(--text-2);
+    animation: spin 0.7s linear infinite;
+}
+
+/* ---------------------------------------------- Time range selector */
+
+.segmented {
+    display: inline-flex;
+    gap: 2px;
+}
+
+.segmented button {
+    min-width: 36px;
+    height: 26px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    font-size: 12.5px;
+    color: var(--text-3);
+}
+
+.segmented button:hover {
+    color: var(--text);
+}
+
+.segmented button[aria-pressed="true"] {
+    background: var(--good-soft);
+    color: var(--forest);
+    font-weight: 600;
+}
+
+/* -------------------------------------------------------- Skeleton */
+
+.skeleton {
+    display: inline-block;
+    vertical-align: middle;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-3) 50%, var(--surface-2) 100%);
+    background-size: 300% 100%;
+    animation: shimmer 1.8s linear infinite;
+}
+
+.spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid var(--rule);
+    border-top-color: var(--text-2);
+    animation: spin 0.8s linear infinite;
+}
+
+.spinner-sm {
+    width: 12px;
+    height: 12px;
+}
+
+/* ----------------------------------------------------- Empty state */
+
+.empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 4px;
+    padding: 28px 16px;
+}
+
+.empty-icon {
+    display: inline-flex;
+    color: var(--text-3);
+    margin-bottom: 6px;
+}
+
+.empty-icon .icon {
+    width: 20px;
+    height: 20px;
+}
+
+.empty-waiting .empty-icon { color: var(--warning); }
+.empty-critical .empty-icon { color: var(--critical); }
+
+.empty-title {
+    font-weight: 600;
+    font-size: 13.5px;
+}
+
+.empty-text {
+    max-width: 380px;
+    font-size: 12.5px;
+    color: var(--text-3);
+}
+
+/* ================================================================== */
+/* Status line + waiting state                                         */
+/* ================================================================== */
+
+.statusbar {
+    display: flex;
+    align-items: center;
+    gap: 16px 32px;
+    flex-wrap: wrap;
+}
+
+.statusbar .status-tag {
+    font-size: 12px;
+}
+
+.statusbar-text {
+    flex: 1;
+    min-width: 240px;
+    display: flex;
+    flex-direction: column;
+}
+
+.statusbar-text strong {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.statusbar-text small {
+    font-size: 12.5px;
+    color: var(--text-3);
+}
+
+.statusbar-meta {
+    display: flex;
+    gap: 32px;
+}
+
+.statusbar-meta dd {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.waiting-body h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 4px 0 2px;
+}
+
+.waiting-body .eyebrow {
+    color: var(--warning);
+    font-weight: 600;
+}
+
+.waiting-body > .muted {
+    font-size: 13px;
+    color: var(--text-3);
+}
+
+.checklist {
+    list-style: none;
+    padding: 0;
+    margin: 14px 0 16px;
+    display: grid;
+    gap: 6px;
+    font-size: 13px;
+}
+
+.checklist li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-2);
+}
+
+.checklist li > :first-child {
+    width: 14px;
+    display: grid;
+    place-items: center;
+}
+
+.checklist .done .icon {
+    width: 14px;
+    height: 14px;
+    color: var(--good);
+}
+
+.checklist .active .led {
+    --tone: var(--warning);
+}
+
+.checklist .led {
+    width: 8px !important;
+    margin: 0 3px;
+}
+
+.checklist .pending {
+    color: var(--text-3);
+}
+
+/* ================================================================== */
+/* Readings (metric tiles)                                             */
+/* ================================================================== */
+
+.metric-strip,
+.grid-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 28px 40px;
+}
+
+.grid-metrics {
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+}
+
+.metric {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.metric-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-3);
+}
+
+.metric-icon {
+    display: inline-flex;
+    color: var(--sage);
+}
+
+.metric-icon .icon {
+    width: 14px;
+    height: 14px;
+}
+
+.metric-label {
+    font-size: 12.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.metric-value {
+    display: flex;
+    align-items: baseline;
+    gap: 3px;
+    min-height: 34px;
+}
+
+.metric-value .num {
+    font-size: 26px;
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+}
+
+.metric-value .unit {
+    font-size: 13px;
+    color: var(--text-3);
+}
+
+.num.is-empty {
+    color: #b8bfc7;
+}
+
+.num.is-empty + .unit {
+    visibility: hidden;
+}
+
+.metric-sub {
+    min-height: 18px;
+    display: flex;
+    align-items: center;
+}
+
+.sub-text {
+    font-size: 12.5px;
+    color: var(--text-3);
+}
+
+.metric.is-on .num {
+    color: var(--good);
+}
+
+.metric-lg .metric-value .num {
+    font-size: 32px;
+}
+
+.metric-spark {
+    margin-top: 10px;
+}
+
+.spark {
+    display: block;
+    width: 100%;
+    overflow: visible;
+}
+
+.spark-empty {
+    border-bottom: 1px dashed var(--rule);
+}
+
+.spark-line {
+    fill: none;
+    stroke: var(--c, var(--chart-line));
+    stroke-width: 1.25;
+    vector-effect: non-scaling-stroke;
+    stroke-linejoin: round;
+}
+
+.spark-area {
+    display: none;
+}
+
+.spark-ref {
+    stroke: var(--chart-ref);
+    stroke-width: 1;
+    stroke-dasharray: 3 3;
+    vector-effect: non-scaling-stroke;
+}
+
+.spark-caption {
+    margin-top: 4px;
+    font-size: 11.5px;
+    color: var(--text-3);
+}
+
+/* ================================================================== */
+/* Soil moisture                                                       */
+/* ================================================================== */
+
+.soil-hero {
+    display: flex;
+    flex-direction: column;
+}
+
+.soil-main {
+    display: flex;
+    align-items: flex-end;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.soil-reading {
+    display: flex;
+    align-items: baseline;
+    line-height: 1;
+}
+
+.soil-reading .num {
+    font-size: 52px;
+    font-weight: 500;
+    letter-spacing: -0.03em;
+}
+
+.soil-reading .unit {
+    font-size: 20px;
+    color: var(--text-3);
+    margin-left: 3px;
+}
+
+.soil-status {
+    padding-bottom: 4px;
+    display: grid;
+    gap: 1px;
+}
+
+.soil-status-label {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.soil-trend,
+.soil-updated {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12.5px;
+    color: var(--text-2);
+}
+
+.soil-trend .icon {
+    width: 14px;
+    height: 14px;
+}
+
+.soil-updated {
+    color: var(--text-3);
+}
+
+/* 0-100% scale with the optimal band and threshold marked */
+.range {
+    margin-top: 22px;
+}
+
+.range-track {
+    position: relative;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--surface-3);
+}
+
+.range-band {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: #9fc19a;
+    transition: left 0.4s ease, width 0.4s ease;
+}
+
+.range-threshold {
+    position: absolute;
+    top: -4px;
+    bottom: -4px;
+    width: 1.5px;
+    margin-left: -0.75px;
+    background: var(--chart-ref);
+    transition: left 0.4s ease;
+}
+
+.range-marker {
+    position: absolute;
+    top: -6px;
+    width: 3px;
+    height: 18px;
+    margin-left: -1.5px;
+    border-radius: 1px;
+    background: var(--text);
+    box-shadow: 0 0 0 2px var(--bg);
+    transition: left 0.6s ease;
+}
+
+.range-scale {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 11.5px;
+    color: var(--text-3);
+    font-variant-numeric: tabular-nums;
+}
+
+.soil-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+    margin-top: 10px;
+    font-size: 12.5px;
+    color: var(--text-2);
+}
+
+.soil-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.lg-threshold {
+    width: 1.5px;
+    height: 11px;
+    background: var(--chart-ref);
+}
+
+.lg-band {
+    width: 14px;
+    height: 6px;
+    border-radius: 2px;
+    background: #9fc19a;
+}
+
+.lg-stage .icon {
+    width: 13px;
+    height: 13px;
+    color: var(--good);
+}
+
+.soil-spark {
+    margin-top: 20px;
+}
+
+.soil-spark-head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11.5px;
+    color: var(--text-3);
+    margin-bottom: 6px;
+}
+
+.soil-foot {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-2);
+}
+
+.soil-foot:not(:empty) {
+    margin-top: 18px;
+}
+
+.soil-foot .icon {
+    width: 14px;
+    height: 14px;
+    margin-top: 2px;
+    color: var(--text-3);
+}
+
+.soil-foot strong {
+    color: var(--text);
+    font-weight: 600;
+}
+
+/* ================================================================== */
+/* AI advisory                                                         */
+/* ================================================================== */
+
+.ai-card {
+    --tone: var(--text-3);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.ai-card.tone-good { --tone: var(--good); }
+.ai-card.tone-warning { --tone: var(--warning); }
+.ai-card.tone-critical { --tone: var(--critical); }
+.ai-card.tone-info { --tone: var(--info); }
+
+.ai-card .card-head {
+    margin-bottom: 0;
+}
+
+.ai-headline {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.ai-icon {
+    display: inline-flex;
+    padding-top: 3px;
+    color: var(--tone);
+}
+
+.ai-icon .icon {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2.2;
+}
+
+.ai-headline h3 {
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.ai-body {
+    color: var(--text-2);
+    font-size: 13.5px;
+    margin-top: -8px;
+    padding-left: 26px;
+    max-width: 560px;
+}
+
+.ai-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    padding: 4px 0 0 26px;
+}
+
+.ai-stats > div {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.ai-stats strong {
+    font-size: 20px;
+    font-weight: 500;
+}
+
+.ai-stats span {
+    font-size: 12.5px;
+    color: var(--text-3);
+}
+
+.ai-model {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding-left: 26px;
+    font-size: 13px;
+}
+
+.ai-model-label {
+    color: var(--text-3);
+}
+
+.ai-model strong {
+    font-weight: 600;
+}
+
+.ai-model.is-off {
+    color: var(--text-3);
+}
+
+.ai-model.is-off .icon {
+    width: 14px;
+    height: 14px;
+}
+
+.meter {
+    position: relative;
+    display: inline-block;
+    width: 72px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--surface-3);
+    overflow: hidden;
+}
+
+.meter > span {
+    position: absolute;
+    inset: 0 auto 0 0;
+    background: var(--sage);
+    transition: width 0.5s ease;
+}
+
+.meter-lg {
+    width: 100%;
+    max-width: 240px;
+    height: 6px;
+}
+
+.ai-conf {
+    font-size: 12.5px;
+    color: var(--text-2);
+    font-variant-numeric: tabular-nums;
+}
+
+.btn-ai {
+    align-self: flex-start;
+    margin: auto 0 0 26px;
+}
+
+.forecast-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+}
+
+.confidence {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 10px 0 6px;
+    font-size: 13px;
+}
+
+.reasons {
+    margin: 6px 0 10px;
+    padding-left: 18px;
+    color: var(--text-2);
+    font-size: 13px;
+    display: grid;
+    gap: 3px;
+}
+
+.explain-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 40px;
+}
+
+.explain-grid h4 {
+    font-size: 13.5px;
+    font-weight: 600;
+    margin: 8px 0 4px;
+}
+
+.explain-grid p {
+    font-size: 13px;
+    color: var(--text-2);
+}
+
+.explain-icon {
+    display: inline-flex;
+    color: var(--text-3);
+}
+
+/* ================================================================== */
+/* Trend chart                                                         */
+/* ================================================================== */
+
+.chart-head {
+    flex-wrap: wrap;
+}
+
+/* Metric selector shows each metric's current value */
+.metric-tabs {
+    display: flex;
+    gap: 28px;
+    margin: 0 0 18px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.metric-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.metric-tabs button {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    padding: 0 0 8px;
+    border: 0;
+    background: none;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.metric-tabs button::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    border-radius: 1px;
+    background: transparent;
+}
+
+.metric-tabs button[aria-selected="true"]::after {
+    background: var(--c, var(--text));
+}
+
+.metric-tabs button[aria-selected="true"] .tab-label .icon {
+    color: var(--c);
+}
+
+.tab-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12.5px;
+    color: var(--text-3);
+}
+
+.tab-label .icon {
+    width: 13px;
+    height: 13px;
+}
+
+.metric-tabs button:hover .tab-label,
+.metric-tabs button[aria-selected="true"] .tab-label {
+    color: var(--text);
+}
+
+.tab-value {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.chart-body {
+    position: relative;
+    height: 280px;
+}
+
+.chart-tall {
+    height: 360px;
+}
+
+.chart-state {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: var(--bg);
+}
+
+.chart-skeleton {
+    position: absolute;
+    inset: 0;
+}
+
+.chart-skeleton .skeleton {
+    display: block;
+}
+
+.chart-busy {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: rgba(241, 241, 234, 0.6);
+}
+
+.chart-foot:empty {
+    display: none;
+}
+
+.chart-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 36px;
+    margin-top: 14px;
+}
+
+.chart-foot > span:not(.foot-note) {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+}
+
+.chart-foot strong {
+    font-size: 14px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+
+.foot-note {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--text-3);
+}
+
+.foot-note .icon {
+    width: 13px;
+    height: 13px;
+}
+
+/* ================================================================== */
+/* Irrigation control                                                  */
+/* ================================================================== */
+
+.irr {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.irr .card-head {
+    margin-bottom: 0;
+}
+
+.readouts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.readout {
+    display: flex;
+    flex-direction: column;
+}
+
+.readout strong {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+}
+
+.readout strong.is-on {
+    color: var(--good);
+}
+
+.readout .led {
+    width: 9px;
+    height: 9px;
+}
+
+/* System status: a dot in the state colour, then plain text */
+.irr-status {
+    --tone: var(--muted);
+}
+
+.irr-status.tone-good { --tone: var(--good); }
+.irr-status.tone-warning { --tone: var(--warning); }
+.irr-status.tone-critical { --tone: var(--critical); }
+.irr-status.tone-info { --tone: var(--info); }
+
+.irr-status p {
+    display: flex;
+    gap: 9px;
+    margin-top: 3px;
+    font-size: 14px;
+}
+
+.irr-status p::before {
+    content: "";
+    flex-shrink: 0;
+    width: 7px;
+    height: 7px;
+    margin-top: 7px;
+    border-radius: 50%;
+    background: var(--tone);
+}
+
+.pump-cmd {
+    display: grid;
+    gap: 8px;
+}
+
+.btn-row {
+    display: flex;
+    gap: 6px;
+}
+
+.btn-cmd {
+    background: transparent;
+    border-color: var(--border-strong);
+    min-width: 92px;
+}
+
+.btn-cmd:hover:not(:disabled) {
+    background: var(--surface-2);
+}
+
+/* The commanded state reads as a switch that's pressed in */
+.btn-cmd[aria-pressed="true"],
+.btn-cmd[aria-pressed="true"]:hover:not(:disabled) {
+    background: var(--forest);
+    border-color: var(--forest);
+    color: #f4f6ef;
+}
+
+.pump-feedback {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--text-2);
+    min-height: 16px;
+}
+
+.pump-feedback .icon {
+    width: 13px;
+    height: 13px;
+}
+
+.irr-foot {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.irr-rule {
+    flex: 1;
+    min-width: 180px;
+    font-size: 12.5px;
+    color: var(--text-3);
+}
+
+/* ================================================================== */
+/* Water tank                                                          */
+/* ================================================================== */
+
+.tank-layout {
+    display: flex;
+    gap: 44px;
+    align-items: stretch;
+}
+
+/* Line illustration of the tank; the fill is the measured level */
+.tank-vessel {
+    position: relative;
+    width: 64px;
+    min-height: 150px;
+    flex-shrink: 0;
+    border: 1.5px solid var(--text-2);
+    border-top-width: 0;
+    border-radius: 0 0 3px 3px;
+}
+
+.tank-water {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--water);
+    transition: height 0.8s ease, background 0.3s;
+}
+
+.tank-water.tone-warning {
+    background: #e2bd72;
+}
+
+.tank-mark {
+    position: absolute;
+    left: calc(100% + 10px);
+    transform: translateY(50%);
+    font-size: 10.5px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-3);
+}
+
+.tank-mark::before {
+    content: "";
+    position: absolute;
+    right: calc(100% + 3px);
+    top: 50%;
+    width: 5px;
+    border-top: 1px solid var(--border-strong);
+}
+
+.tank-low {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-top: 1px dashed var(--chart-ref);
+}
+
+.tank-low span {
+    position: absolute;
+    right: calc(100% + 6px);
+    top: -8px;
+    font-size: 10.5px;
+    line-height: 15px;
+    color: var(--text-3);
+}
+
+.tank-empty-label {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 12%;
+    text-align: center;
+    font-size: 11.5px;
+    color: var(--text-3);
+}
+
+.tank-stats {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.tank-pct {
+    display: flex;
+    align-items: baseline;
+    line-height: 1.1;
+}
+
+.tank-pct .num {
+    font-size: 40px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+}
+
+.tank-pct .unit {
+    font-size: 16px;
+    color: var(--text-3);
+    margin-left: 2px;
+}
+
+.tank-liters {
+    font-size: 13px;
+    color: var(--text-2);
+    margin: 2px 0 14px;
+    min-height: 18px;
+}
+
+/* Key / value rows */
+.kv {
+    margin: 0;
+    display: grid;
+    gap: 6px;
+}
+
+.kv > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 13px;
+}
+
+.kv dd {
+    margin: 0;
+    font-weight: 500;
+    text-align: right;
+}
+
+.kv-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px 40px;
+}
+
+.usage-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+}
+
+.usage-grid > div {
+    min-width: 0;
+}
+
+/* ================================================================== */
+/* Alarms + tables (rows separated by hairlines - the only dividers)   */
+/* ================================================================== */
+
+.alert-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.alert {
+    --tone: var(--text-3);
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 10px 0;
+}
+
+.alert + .alert {
+    box-shadow: 0 -1px 0 var(--rule);
+}
+
+.alert-critical { --tone: var(--critical); }
+.alert-warning { --tone: var(--warning); }
+.alert-info { --tone: var(--info); }
+
+.alert-icon {
+    display: inline-flex;
+    padding-top: 2px;
+    color: var(--tone);
+}
+
+.alert-icon .icon {
+    width: 15px;
+    height: 15px;
+}
+
+.alert-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.alert-title {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-weight: 600;
+    font-size: 13.5px;
+}
+
+/* Critical alarms are the only rows whose title takes the state colour */
+.alert-critical .alert-title {
+    color: var(--critical);
+}
+
+.alert-kind {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-3);
+}
+
+.alert-msg {
+    font-size: 13px;
+    color: var(--text-2);
+}
+
+.alert time {
+    font-size: 12px;
+    color: var(--text-3);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.alert-list.compact .alert {
+    padding: 8px 0;
+}
+
+.alert-list.compact time {
+    display: none;
+}
+
+.all-clear {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 4px 0;
+}
+
+.all-clear p {
+    font-weight: 600;
+    font-size: 13.5px;
+}
+
+.all-clear small {
+    font-size: 12.5px;
+    color: var(--text-3);
+}
+
+.all-clear-icon {
+    display: inline-flex;
+    padding-top: 2px;
+    color: var(--good);
+}
+
+.all-clear-icon .icon {
+    width: 15px;
+    height: 15px;
+    stroke-width: 2.4;
+}
+
+.more-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+    font-size: 12.5px;
+    color: var(--text-2);
+}
+
+.more-link .icon {
+    width: 13px;
+    height: 13px;
+}
+
+.table-wrap {
+    overflow-x: auto;
+}
+
+.table-scroll {
+    max-height: 560px;
+    overflow-y: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.table th {
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    text-align: left;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-3);
+    padding: 0 16px 8px;
+    box-shadow: inset 0 -1px 0 var(--rule);
+    white-space: nowrap;
+}
+
+.table td {
+    padding: 9px 16px;
+    vertical-align: middle;
+}
+
+.table tbody tr + tr td {
+    box-shadow: inset 0 1px 0 var(--rule);
+}
+
+.table th:first-child,
+.table td:first-child {
+    padding-left: 0;
+}
+
+.table th:last-child,
+.table td:last-child {
+    padding-right: 0;
+}
+
+.table tbody tr:hover td {
+    background: var(--surface-2);
+}
+
+.table .num-col {
+    text-align: right;
+}
+
+.table-dense td {
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+
+.table .sec {
+    color: var(--text-3);
+}
+
+.table tr.is-active strong {
+    font-weight: 700;
+}
+
+/* Form inputs keep a border - it's what makes them recognisable as inputs */
+.input-suffix {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    overflow: hidden;
+}
+
+.input-suffix:focus-within {
+    border-color: var(--text);
+}
+
+.input-suffix input {
+    width: 64px;
+    height: 28px;
+    padding: 0 8px;
+    border: 0;
+    outline: none;
+    background: transparent;
+    font-variant-numeric: tabular-nums;
+}
+
+.input-suffix input[aria-invalid="true"] {
+    color: var(--critical);
+}
+
+.input-suffix span {
+    padding-right: 8px;
+    color: var(--text-3);
+    font-size: 12.5px;
+}
+
+/* ================================================================== */
+/* Growth lifecycle                                                    */
+/* ================================================================== */
+
+.lifecycle-wrap {
+    margin: 4px 0 24px;
+}
+
+.lifecycle-inner {
+    position: relative;
+}
+
+.lifecycle-line {
+    position: absolute;
+    top: 9px;
+    left: 10%;
+    right: 10%;
+    height: 1.5px;
+    background: var(--rule);
+}
+
+.lifecycle-line span {
+    display: block;
+    height: 100%;
+    background: var(--sage);
+    transition: width 0.5s ease;
+}
+
+.lifecycle {
+    position: relative;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.step button {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 0 4px 4px;
+    border: 0;
+    background: none;
+    border-radius: var(--radius-sm);
+}
+
+.step-dot {
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 1.5px solid var(--border-strong);
+    color: var(--text-3);
+    font-weight: 600;
+    font-size: 10.5px;
+}
+
+.step-dot .icon {
+    width: 11px;
+    height: 11px;
+    stroke-width: 2.6;
+}
+
+.step button:not(:disabled):hover .step-dot {
+    border-color: var(--good);
+    color: var(--good);
+}
+
+.step-name {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--text-2);
+}
+
+.step-meta {
+    font-size: 12px;
+    color: var(--text-3);
+    font-variant-numeric: tabular-nums;
+}
+
+.step-done .step-dot {
+    background: var(--good-soft);
+    border-color: var(--sage);
+    color: var(--good);
+}
+
+.step-current .step-dot {
+    background: var(--good);
+    border-color: var(--good);
+    color: #f4f6ef;
+}
+
+.step-current .step-name {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.step-current button {
+    cursor: default;
+}
+
+.step-end .step-dot {
+    border-style: dashed;
+}
+
+.step-end button:disabled {
+    cursor: default;
+}
+
+.stage-facts {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 24px;
+}
+
+.stage-facts > div {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    align-items: flex-start;
+    min-width: 0;
+}
+
+.stage-facts strong {
+    font-size: 16px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+
+.stage-facts span:not(.pill):not(.dot) {
+    font-size: 12px;
+    color: var(--text-3);
+}
+
+/* ================================================================== */
+/* Zones, crop health                                                  */
+/* ================================================================== */
+
+.zone summary {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    padding: 4px 0 14px;
+    cursor: pointer;
+    list-style: none;
+}
+
+.zone summary::-webkit-details-marker {
+    display: none;
+}
+
+.zone[open] summary {
+    box-shadow: inset 0 -1px 0 var(--rule);
+}
+
+.zone-badge {
+    display: inline-flex;
+    color: var(--text-3);
+}
+
+.zone-name {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.zone-name strong {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.zone-name small {
+    font-size: 12.5px;
+    color: var(--text-3);
+}
+
+.zone-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 96px;
+}
+
+.zone-stat strong {
+    font-size: 18px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+
+.zone-chevron {
+    color: var(--text-3);
+    transition: transform 0.15s ease;
+}
+
+.zone[open] .zone-chevron {
+    transform: rotate(180deg);
+}
+
+.zone-body {
+    padding: 18px 0 0;
+    display: grid;
+    gap: 18px;
+}
+
+.health-summary {
+    --tone: var(--good);
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+}
+
+.health-summary.tone-warning { --tone: var(--warning); }
+.health-summary.tone-critical { --tone: var(--critical); }
+
+.health-summary h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 2px 0;
+}
+
+.health-summary .muted {
+    font-size: 13px;
+    color: var(--text-3);
+    max-width: 720px;
+}
+
+.health-icon {
+    display: inline-flex;
+    padding-top: 3px;
+    color: var(--tone);
+}
+
+.health-icon .icon {
+    width: 20px;
+    height: 20px;
+}
+
+.check-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.check-list li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+}
+
+.check-list li + li {
+    box-shadow: 0 -1px 0 var(--rule);
+}
+
+.check-icon .icon {
+    width: 16px;
+    height: 16px;
+}
+
+.check-list .tone-good .check-icon { color: var(--good); }
+.check-list .tone-warning .check-icon { color: var(--warning); }
+.check-list .tone-critical .check-icon { color: var(--critical); }
+.check-list .tone-info .check-icon,
+.check-list .tone-muted .check-icon { color: var(--muted); }
+
+.check-list li > div {
+    flex: 1;
+    min-width: 0;
+}
+
+.check-title {
+    font-size: 14px;
+}
+
+.check-detail {
+    font-size: 12.5px;
+    color: var(--text-3);
+}
+
+.check-value {
+    font-weight: 500;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ================================================================== */
+/* Simulator + ESP32                                                   */
+/* ================================================================== */
+
+.sim-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.scenario-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.scenario-list li {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 0;
+}
+
+.scenario-list li + li {
+    box-shadow: 0 -1px 0 var(--rule);
+}
+
+.scenario-icon {
+    display: inline-flex;
+    width: 20px;
+    color: var(--text-3);
+    flex-shrink: 0;
+}
+
+.scenario-icon .icon {
+    width: 16px;
+    height: 16px;
+}
+
+.is-running .scenario-icon {
+    color: var(--good);
+}
+
+.scenario-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.scenario-body strong {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.scenario-body small {
+    font-size: 13px;
+    color: var(--text-3);
+}
+
+.scenario-list .btn,
+.scenario-list .status-tag {
+    min-width: 72px;
+    justify-content: center;
+}
+
+.esp-hero {
+    --tone: var(--muted);
+    display: grid;
+    gap: 22px;
+}
+
+.esp-hero.tone-good { --tone: var(--good); }
+.esp-hero.tone-warning { --tone: var(--warning); }
+.esp-hero.tone-critical { --tone: var(--critical); }
+.esp-hero.tone-info { --tone: var(--info); }
+
+.esp-status {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.esp-status h2 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--tone);
+}
+
+.sensor-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.sensor-list li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 0;
+    font-size: 13.5px;
+}
+
+.sensor-list li + li {
+    box-shadow: 0 -1px 0 var(--rule);
+}
+
+.sensor-list li > span:nth-child(2) {
+    flex: 1;
+}
+
+.sensor-icon {
+    display: inline-flex;
+    color: var(--text-3);
+}
+
+.sensor-icon .icon {
+    width: 14px;
+    height: 14px;
+}
+
+.steps {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: step;
+    display: grid;
+    gap: 14px;
+}
+
+.steps li {
+    position: relative;
+    display: grid;
+    gap: 3px;
+    padding-left: 26px;
+    counter-increment: step;
+}
+
+.steps li::before {
+    content: counter(step) ".";
+    position: absolute;
+    left: 0;
+    top: 1px;
+    color: var(--text-3);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+
+.steps code {
+    justify-self: start;
+}
+
+.steps span {
+    font-size: 13px;
+    color: var(--text-2);
+}
+
+/* ================================================================== */
+/* Settings, dialog, toasts                                            */
+/* ================================================================== */
+
+.settings-form {
+    display: grid;
+    gap: 20px;
+    align-content: start;
+}
+
+.settings-form .card-head {
+    margin-bottom: 0;
+}
+
+.field {
+    display: grid;
+    gap: 5px;
+}
+
+.field > span {
+    font-weight: 500;
+    font-size: 13.5px;
+}
+
+.field small {
+    font-size: 12.5px;
+    color: var(--text-3);
+}
+
+.field .input-suffix {
+    justify-self: start;
+}
+
+.field .input-suffix input {
+    width: 140px;
+}
+
+.field select {
+    justify-self: start;
+    height: 30px;
+    min-width: 140px;
+    padding: 0 8px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+}
+
+.dialog {
+    width: min(400px, calc(100vw - 32px));
+    padding: 22px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--surface);
+    box-shadow: var(--shadow-pop);
+    color: var(--text);
+}
+
+.dialog::backdrop {
+    background: rgba(22, 27, 34, 0.35);
+}
+
+.dialog-icon {
+    display: inline-flex;
+    color: var(--text-2);
+    margin-bottom: 10px;
+}
+
+.dialog-icon .icon {
+    width: 20px;
+    height: 20px;
+}
+
+.dialog-icon.tone-critical {
+    color: var(--critical);
+}
+
+.dialog h2 {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.dialog p {
+    margin: 6px 0 20px;
+    font-size: 13.5px;
+    color: var(--text-2);
+}
+
+.dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.toasts {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 100;
+    display: grid;
+    gap: 6px;
+    justify-items: end;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 380px;
+    padding: 9px 12px;
+    border-radius: var(--radius-sm);
+    background: var(--nav-bg);
+    color: #e8ebef;
+    font-size: 13px;
+    box-shadow: var(--shadow-pop);
+    animation: fade-in 0.15s ease;
+}
+
+.toast .icon { width: 15px; height: 15px; }
+.toast-good .icon { color: #9fcf9a; }
+.toast-warning .icon { color: #e2b25c; }
+.toast-critical .icon { color: #e99282; }
+.toast-info .icon { color: #a8c3d6; }
+
+.toast.leaving {
+    animation: fade-out 0.2s ease forwards;
+}
+
+/* A silent controller leaves its last readings on screen - dim them so they read as frozen */
+body.is-stale .metric-value,
+body.is-stale .soil-reading,
+body.is-stale .tank-pct,
+body.is-stale .tab-value,
+body.is-stale .node-text strong {
+    opacity: 0.4;
+}
+
+/* ================================================================== */
+/* Process schematic                                                   */
+/* ================================================================== */
+
+/* The process is the one area set on a lighter ground - contrast, not a border */
+.process {
+    margin: 0 -24px;
+    padding: 18px 24px 22px;
+    background: var(--surface);
+    border-radius: 6px;
+}
+
+.process-line {
+    display: grid;
+    grid-template-columns: auto minmax(40px, 1fr) auto minmax(40px, 1fr) auto minmax(40px, 1fr) auto;
+    align-items: start;
+    padding: 8px 0 28px;
+}
+
+.node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    min-width: 140px;
+}
+
+.node-sym {
+    height: 56px;
+    display: grid;
+    place-items: center;
+}
+
+.sym {
+    height: 56px;
+    width: auto;
+    overflow: visible;
+}
+
+.sym-body {
+    fill: none;
+    stroke: var(--text-2);
+    stroke-width: 1.4;
+}
+
+.sym-mark {
+    stroke: var(--chart-ref);
+    stroke-width: 1;
+    stroke-dasharray: 3 2;
+}
+
+.sym-text {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    fill: var(--text-2);
+}
+
+.sym-water { fill: var(--water); transition: y 0.6s ease, height 0.6s ease; }
+.sym-water.tone-warning { fill: #e2bd72; }
+.sym-water.tone-critical { fill: #d99a8f; }
+.sym-soil { fill: var(--sand); }
+.sym-moisture { fill: var(--water); opacity: 0.55; transition: y 0.6s ease, height 0.6s ease; }
+.sym-crop { fill: none; stroke: var(--good); stroke-width: 1.5; }
+
+.sym-pump .sym-fill { fill: none; stroke: var(--text-2); stroke-width: 1.4; stroke-linejoin: round; }
+.sym-pump.is-on .sym-body { stroke: var(--forest); }
+.sym-pump.is-on .sym-fill { fill: var(--forest); stroke: var(--forest); }
+
+.node-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    margin-top: 10px;
+}
+
+.node-text small {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--text-3);
+    white-space: nowrap;
+}
+
+.node-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-3);
+}
+
+.node-text strong {
+    font-size: 26px;
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+.pipe-flowing .pipe-label {
+    color: var(--info);
+}
+
+.node-text strong em,
+.process-env dd em {
+    font-style: normal;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-3);
+    margin-left: 3px;
+}
+
+.is-na {
+    color: #b8bfc7;
+}
+
+.node-state {
+    min-height: 18px;
+}
+
+/* Pipe between instruments: always neutral grey; when water is actually
+   moving, dashes travel slowly along it in the direction of flow */
+.pipe {
+    position: relative;
+    height: 2px;
+    margin-top: 27px;
+    background: var(--border-strong);
+}
+
+.pipe::after {
+    content: "";
+    position: absolute;
+    right: -1px;
+    top: -4px;
+    border: 5px solid transparent;
+    border-left: 6px solid var(--border-strong);
+    border-right: 0;
+}
+
+.pipe-flowing {
+    height: 3px;
+    background: repeating-linear-gradient(90deg, var(--water-line) 0 10px, transparent 10px 18px), #b9cdd9;
+    background-size: 18px 100%, auto;
+    animation: flow-x 1.2s linear infinite;
+}
+
+.pipe-flowing::after {
+    border-left-color: var(--water-line);
+}
+
+.pipe-unknown {
+    background: repeating-linear-gradient(90deg, var(--border-strong) 0 5px, transparent 5px 9px);
+}
+
+.pipe-label {
+    position: absolute;
+    left: 50%;
+    bottom: 8px;
+    transform: translateX(-50%);
+    font-size: 12px;
+    white-space: nowrap;
+    color: var(--text-2);
+    font-variant-numeric: tabular-nums;
+}
+
+.process-env {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 48px;
+}
+
+.process-env dt {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.process-env dd {
+    font-size: 17px;
+    font-weight: 500;
+}
+
+/* ================================================================== */
+/* Motion - state changes and real flow only                           */
+/* ================================================================== */
+
+@keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes fade-out { to { opacity: 0; } }
+@keyframes blink { 50% { opacity: 0.25; } }
+@keyframes flow-x { to { background-position: 18px 0, 0 0; } }
+@keyframes flow-y { to { background-position: 0 18px, 0 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
     }
+}
 
+/* ================================================================== */
+/* Responsive                                                          */
+/* ================================================================== */
+
+@media (max-width: 1280px) {
+    .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+    .explain-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .profile-text { display: none; }
+}
+
+@media (max-width: 1100px) {
+    .grid-hero { grid-template-columns: minmax(0, 1fr); }
+    .stage-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1024px) {
     .sidebar {
-        width: 100%;
-        height: auto;
-        position: static;
+        transform: translateX(-100%);
     }
 
-    .nav {
-        flex-direction: row;
-        flex-wrap: wrap;
+    .app.nav-open .sidebar {
+        transform: none;
+        box-shadow: var(--shadow-pop);
     }
+
+    .main {
+        margin-left: 0;
+    }
+
+    .icon-btn.menu-btn {
+        display: grid;
+    }
+
+    .topbar,
+    .sim-banner {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
+    .content {
+        padding: 24px 20px 48px;
+    }
+}
+
+@media (max-width: 900px) {
+    /* The process line turns vertical: instruments stack, pipes run downward */
+    .process-line {
+        grid-template-columns: minmax(0, 1fr);
+        padding: 4px 0 20px;
+    }
+
+    .node {
+        flex-direction: row;
+        align-items: center;
+        text-align: left;
+        gap: 16px;
+    }
+
+    .node-sym {
+        width: 64px;
+    }
+
+    .node-text {
+        align-items: flex-start;
+        margin-top: 0;
+    }
+
+    .pipe {
+        width: 2px;
+        height: 26px;
+        margin: 6px 0 6px 31px;
+    }
+
+    .pipe::after {
+        right: auto;
+        left: -4px;
+        top: auto;
+        bottom: -1px;
+        border: 5px solid transparent;
+        border-top: 6px solid var(--border-strong);
+        border-bottom: 0;
+    }
+
+    .pipe-flowing {
+        width: 3px;
+        height: 26px;
+        background: repeating-linear-gradient(180deg, var(--water-line) 0 10px, transparent 10px 18px), #b9cdd9;
+        background-size: 100% 18px, auto;
+        animation-name: flow-y;
+    }
+
+    .pipe-flowing::after {
+        border-top-color: var(--water-line);
+        border-left-color: transparent;
+    }
+
+    .process {
+        margin: 0 -12px;
+        padding: 14px 12px 18px;
+    }
+
+    .pipe-unknown {
+        background: repeating-linear-gradient(180deg, var(--border-strong) 0 5px, transparent 5px 9px);
+    }
+
+    .pipe-label {
+        left: 16px;
+        bottom: auto;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    .process-env {
+        gap: 14px 32px;
+    }
+}
+
+@media (max-width: 760px) {
+    .grid { gap: 36px; }
+    .grid-2,
+    .grid-3 { grid-template-columns: minmax(0, 1fr); }
+    .grid-3 > :last-child:nth-child(odd) { grid-column: auto; }
+    .explain-grid { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+    .usage-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+    .view { gap: 24px; }
+    .view > * + * { padding-top: 24px; }
+
+    .metric-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 24px;
+    }
+
+    .crumb { display: none; }
+    .conn-device { display: none; }
+    .profile { display: none; }
+    .topbar-actions { gap: 8px; }
+
+    .statusbar-text strong { font-size: 16px; }
+    .statusbar-meta { width: 100%; gap: 24px; }
+
+    .soil-reading .num { font-size: 44px; }
+
+    .sim-detail { display: none; }
+
+    .chart-body { height: 220px; }
+    .chart-tall { height: 260px; }
+    .foot-note { margin-left: 0; }
+
+    .zone summary {
+        flex-wrap: wrap;
+        gap: 12px 24px;
+    }
+
+    .zone-name { flex-basis: calc(100% - 40px); }
+
+    .lifecycle-wrap {
+        overflow-x: auto;
+        margin-left: -20px;
+        margin-right: -20px;
+        padding: 0 20px;
+    }
+
+    .lifecycle-inner { min-width: 440px; }
+
+    .scenario-list li { flex-wrap: wrap; }
+    .scenario-body { flex-basis: calc(100% - 120px); }
+
+    .ai-body, .ai-stats, .ai-model { padding-left: 0; }
+    .btn-ai { margin-left: 0; }
+}
+
+@media (max-width: 420px) {
+    .stage-facts { grid-template-columns: minmax(0, 1fr); }
+    .tank-layout { gap: 40px; }
+    .ai-stats { grid-template-columns: minmax(0, 1fr); }
 }
